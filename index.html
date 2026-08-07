@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Stories From The Lens — Proof Gallery</title>
+<style>
+  :root {
+    --bg: #131313; --panel: #1c1c1c; --panel2: #242424; --line: #303030;
+    --text: #ececec; --dim: #9a9a9a; --star: #f0b429; --fav: #e05a5f;
+    --accent: #7ab8ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  img { display: block; max-width: 100%; }
+
+  header {
+    position: sticky; top: 0; z-index: 20; background: rgba(19,19,19,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+    padding: 12px 18px;
+  }
+  .brand { font-size: 10.5px; letter-spacing: .24em; color: var(--dim); margin-bottom: 5px; }
+  .hrow { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 13px; }
+  .rolebadge {
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 99px; padding: 2px 9px;
+  }
+  .progresswrap { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+  .pbar { flex: 1; max-width: 260px; height: 4px; background: var(--panel2); border-radius: 99px; overflow: hidden; }
+  .pbar i { display: block; height: 100%; background: var(--star); width: 0; transition: width .3s; }
+  .pcount { font-size: 12px; color: var(--dim); white-space: nowrap; }
+
+  .toolbar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px;
+    font-size: 13px; color: var(--dim); transition: .15s;
+  }
+  .chip:hover { color: var(--text); border-color: #4a4a4a; }
+  .chip.on { color: #111; background: var(--text); border-color: var(--text); font-weight: 600; }
+  .chip.warn { border-color: var(--fav); color: var(--fav); }
+  .spacer { flex: 1; }
+  .savestate { font-size: 12px; color: var(--dim); min-width: 60px; text-align: right; }
+  .savestate.err { color: var(--fav); }
+
+  main { padding: 16px; max-width: 1500px; margin: 0 auto; }
+  .grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+  @media (max-width: 560px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden; transition: border-color .15s, transform .1s; position: relative;
+  }
+  .card:hover { border-color: #4d4d4d; }
+  .card .imgwrap { aspect-ratio: 4 / 3; background: #0c0c0c; cursor: pointer; position: relative; }
+  .card .imgwrap img { width: 100%; height: 100%; object-fit: cover; }
+  .card.selected { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .selbadge {
+    position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: #10233a; font-size: 13px; font-weight: 700;
+    display: none; align-items: center; justify-content: center;
+  }
+  .card.selected .selbadge { display: flex; }
+  .cardmeta { padding: 8px 10px 9px; }
+  .fname { font-size: 11.5px; color: var(--dim); letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cardrow { display: flex; align-items: center; margin-top: 5px; gap: 8px; }
+  .stars { display: inline-flex; gap: 1px; }
+  .stars button { font-size: 17px; line-height: 1; color: #4d4d4d; padding: 2px 1px; transition: color .1s, transform .05s; }
+  .stars button.lit { color: var(--star); }
+  .stars button:active { transform: scale(1.25); }
+  .favbtn { font-size: 16px; color: #4d4d4d; padding: 2px 4px; margin-left: auto; }
+  .favbtn.on { color: var(--fav); }
+  .cbadge { font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 1px 7px; }
+  .cbadge:empty { display: none; }
+
+  /* Lightbox */
+  .lb {
+    position: fixed; inset: 0; z-index: 50; background: rgba(10,10,10,.97);
+    display: none; flex-direction: column;
+  }
+  .lb.open { display: flex; }
+  .lbtop { display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+  .lbtop .fname { font-size: 13px; }
+  .lbcount { font-size: 12px; color: var(--dim); }
+  .lbclose { margin-left: auto; font-size: 22px; color: var(--dim); padding: 4px 10px; }
+  .lbclose:hover { color: var(--text); }
+  .lbbody { flex: 1; display: flex; min-height: 0; }
+  .lbstage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-width: 0; padding: 0 8px; }
+  .lbstage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .navbtn {
+    position: absolute; top: 50%; transform: translateY(-50%); font-size: 34px;
+    color: rgba(255,255,255,.65); padding: 24px 14px; user-select: none; z-index: 2;
+  }
+  .navbtn:hover { color: #fff; }
+  .navbtn.prev { left: 0; } .navbtn.next { right: 0; }
+  .lbside {
+    width: 320px; border-left: 1px solid var(--line); background: var(--panel);
+    display: flex; flex-direction: column; padding: 16px; gap: 14px; overflow-y: auto;
+  }
+  .lbside .stars button { font-size: 26px; padding: 2px 3px; }
+  .lbside .favbtn { font-size: 22px; margin-left: 0; }
+  .sidelabel { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin-bottom: 6px; }
+  .comments { display: flex; flex-direction: column; gap: 10px; }
+  .comment { background: var(--panel2); border-radius: 8px; padding: 8px 11px; font-size: 13.5px; }
+  .comment .who { font-size: 11px; color: var(--dim); margin-bottom: 3px; display: flex; justify-content: space-between; gap: 8px; }
+  .comment .who .del { color: #6e6e6e; font-size: 11px; }
+  .comment .who .del:hover { color: var(--fav); }
+  .cform { display: flex; gap: 8px; }
+  .cform textarea {
+    flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--text); font: inherit; font-size: 13.5px; padding: 8px 10px; resize: vertical; min-height: 40px;
+  }
+  .cform button {
+    align-self: flex-end; background: var(--text); color: #111; border-radius: 8px;
+    padding: 8px 14px; font-weight: 600; font-size: 13px;
+  }
+  .cform button:disabled { opacity: .4; cursor: default; }
+  .hint { font-size: 11.5px; color: #6c6c6c; }
+  @media (max-width: 760px) {
+    .lbbody { flex-direction: column; }
+    .lbside { width: 100%; border-left: none; border-top: 1px solid var(--line); max-height: 46%; }
+    .navbtn { font-size: 26px; padding: 18px 10px; }
+  }
+
+  /* Compare */
+  .cmp { position: fixed; inset: 0; z-index: 60; background: rgba(10,10,10,.98); display: none; flex-direction: column; }
+  .cmp.open { display: flex; }
+  .cmptop { display: flex; align-items: center; padding: 10px 16px; gap: 12px; }
+  .cmppanes { flex: 1; display: flex; gap: 10px; padding: 0 14px 14px; min-height: 0; }
+  .cmppane { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .cmppane .pimg { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #0c0c0c; }
+  .cmppane .pimg img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .cmpmeta { padding: 9px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cmpmeta .rm { margin-left: auto; color: var(--dim); font-size: 12px; }
+  .cmpmeta .rm:hover { color: var(--fav); }
+  @media (max-width: 760px) { .cmppanes { flex-direction: column; } }
+
+  /* Admin summary */
+  .admin { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 18px; }
+  .admin h2 { font-size: 14px; margin-bottom: 10px; }
+  .statrow { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .stat { background: var(--panel2); border-radius: 8px; padding: 8px 14px; font-size: 13px; color: var(--dim); }
+  .stat b { color: var(--text); font-size: 16px; margin-right: 5px; }
+  .adminbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 99;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 18px; font-size: 13.5px; display: none;
+  }
+  .center { display: flex; align-items: center; justify-content: center; min-height: 70vh; color: var(--dim); text-align: center; padding: 20px; }
+  .empty { color: var(--dim); text-align: center; padding: 60px 0; }
+</style>
+</head>
+<body>
+<div id="app"><div class="center">Loading gallery…</div></div>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
+  var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZ25wZHp5d2N4YmZoZHFpcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMjE5MDAsImV4cCI6MjA4NTY5NzkwMH0.RLzcnZNDQBis5z6WPLqTUSeaRJxjOh9p1kk89PDtsCQ";
+  var token = new URLSearchParams(location.search).get("t") || "";
+  var S = { data: null, images: [], filter: "all", compareMode: false, sel: [], lbIndex: -1, pending: 0 };
+  var app = document.getElementById("app");
+
+  function rpc(name, args) {
+    return fetch(SUPA + "/rest/v1/rpc/" + name, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": KEY, "Authorization": "Bearer " + KEY },
+      body: JSON.stringify(args)
+    }).then(function (r) {
+      if (!r.ok) { return r.text().then(function (t) { throw new Error(t || r.status); }); }
+      var ct = r.headers.get("content-type") || "";
+      return ct.indexOf("json") >= 0 ? r.json() : null;
+    });
+  }
+  function imgUrl(path) { return SUPA + "/storage/v1/object/public/proofing/" + path; }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function toast(msg, ms) {
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.style.display = "block";
+    clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, ms || 2200);
+  }
+  function saveState(txt, err) {
+    var el = document.getElementById("savestate");
+    if (el) { el.textContent = txt; el.className = "savestate" + (err ? " err" : ""); }
+  }
+
+  function isAdmin() { return S.data && S.data.role === "admin"; }
+  function ratedCount() {
+    return S.images.filter(function (i) { return i.rating || i.favorite || i.comments.length; }).length;
+  }
+  function filtered() {
+    var f = S.filter;
+    return S.images.filter(function (i) {
+      if (f === "all") return true;
+      if (f === "unrated") return !i.rating && !i.favorite && !i.comments.length;
+      if (f === "favorites") return i.favorite;
+      if (f === "commented") return i.comments.length > 0;
+      if (f === "top") return (i.rating || 0) >= 4;
+      return true;
+    });
+  }
+
+  function pushFeedback(img) {
+    S.pending++; saveState("Saving…");
+    rpc("proof_set_feedback", { p_token: token, p_image_id: img.id, p_rating: img.rating || null, p_favorite: !!img.favorite })
+      .then(function () { S.pending--; if (!S.pending) saveState("Saved ✓"); })
+      .catch(function () { S.pending--; saveState("Save failed", true); toast("Couldn't save — check your connection and try again."); });
+  }
+  function setRating(img, n) {
+    img.rating = (img.rating === n) ? null : n;
+    pushFeedback(img); refreshImageUI(img);
+  }
+  function toggleFav(img) {
+    img.favorite = !img.favorite;
+    pushFeedback(img); refreshImageUI(img);
+  }
+  function addComment(img, body, done) {
+    rpc("proof_add_comment", { p_token: token, p_image_id: img.id, p_body: body })
+      .then(function (c) { img.comments.push(c); refreshImageUI(img); done(true); })
+      .catch(function () { toast("Couldn't post comment — try again."); done(false); });
+  }
+  function deleteComment(img, cid) {
+    rpc("proof_delete_comment", { p_token: token, p_comment_id: cid })
+      .then(function () {
+        img.comments = img.comments.filter(function (c) { return c.id !== cid; });
+        refreshImageUI(img);
+      })
+      .catch(function () { toast("Couldn't delete comment."); });
+  }
+
+  function starsHtml(img, cls) {
+    var h = '<span class="stars ' + (cls || "") + '" data-img="' + img.id + '">';
+    for (var n = 1; n <= 5; n++) {
+      h += '<button data-star="' + n + '" aria-label="Rate ' + n + '" class="' + ((img.rating || 0) >= n ? "lit" : "") + '">' + ((img.rating || 0) >= n ? "★" : "☆") + "</button>";
+    }
+    return h + "</span>";
+  }
+  function favHtml(img) {
+    return '<button class="favbtn ' + (img.favorite ? "on" : "") + '" data-fav="' + img.id + '" aria-label="Favorite">' + (img.favorite ? "♥" : "♡") + "</button>";
+  }
+
+  function render() {
+    var g = S.data.gallery;
+    var list = filtered();
+    var total = S.images.length;
+    var h = "";
+    h += "<header><div class='brand'>STORIES FROM THE LENS</div><div class='hrow'><h1>" + esc(g.title) + "</h1>";
+    h += "<span class='sub'>" + total + " photos · straight out of camera</span>";
+    if (isAdmin()) h += "<span class='rolebadge'>Photographer view</span>";
+    h += "</div>";
+    h += "<div class='progresswrap'><div class='pbar'><i id='pfill'></i></div><span class='pcount' id='pcount'></span></div>";
+    h += "<div class='toolbar'>";
+    var chips = [["all", "All"], ["unrated", "To review"], ["favorites", "♥ Favorites"], ["top", "★ 4+"], ["commented", "Commented"]];
+    chips.forEach(function (c) {
+      h += "<button class='chip " + (S.filter === c[0] ? "on" : "") + "' data-filter='" + c[0] + "'>" + c[1] + "</button>";
+    });
+    h += "<span class='spacer'></span>";
+    h += "<button class='chip " + (S.compareMode ? "on" : "") + "' id='cmpmode'>Compare: " + (S.compareMode ? "pick 2–3" : "off") + "</button>";
+    if (S.compareMode && S.sel.length >= 2) h += "<button class='chip warn' id='cmpgo'>Compare " + S.sel.length + " →</button>";
+    h += "<span class='savestate' id='savestate'></span>";
+    h += "</div></header>";
+
+    h += "<main>";
+    if (isAdmin()) h += adminHtml();
+    if (!list.length) {
+      h += "<div class='empty'>Nothing in this view yet.</div>";
+    } else {
+      h += "<div class='grid'>";
+      list.forEach(function (img) {
+        var selIdx = S.sel.indexOf(img.id);
+        h += "<div class='card " + (selIdx >= 0 ? "selected" : "") + "' data-card='" + img.id + "'>";
+        h += "<div class='imgwrap' data-open='" + img.id + "'><img loading='lazy' src='" + imgUrl(img.thumb_path) + "' alt='" + esc(img.filename) + "'>";
+        h += "<span class='selbadge'>" + (selIdx + 1) + "</span></div>";
+        h += "<div class='cardmeta'><div class='fname'>" + esc(img.filename) + "</div>";
+        h += "<div class='cardrow'>" + starsHtml(img) + "<span class='cbadge'>" + (img.comments.length ? "💬 " + img.comments.length : "") + "</span>" + favHtml(img) + "</div>";
+        h += "</div></div>";
+      });
+      h += "</div>";
+    }
+    h += "</main>";
+
+    h += lightboxShell();
+    h += compareShell();
+    app.innerHTML = h;
+    updateProgress();
+    bind();
+  }
+
+  function updateProgress() {
+    var total = S.images.length, done = ratedCount();
+    var f = document.getElementById("pfill"), c = document.getElementById("pcount");
+    if (f) f.style.width = (total ? Math.round(done / total * 100) : 0) + "%";
+    if (c) c.textContent = done + " of " + total + " reviewed";
+  }
+
+  function adminHtml() {
+    var imgs = S.images;
+    var favs = imgs.filter(function (i) { return i.favorite; });
+    var top = imgs.filter(function (i) { return (i.rating || 0) >= 4; });
+    var commented = imgs.filter(function (i) { return i.comments.length; });
+    var avgArr = imgs.filter(function (i) { return i.rating; });
+    var avg = avgArr.length ? (avgArr.reduce(function (a, i) { return a + i.rating; }, 0) / avgArr.length).toFixed(1) : "—";
+    var h = "<div class='admin'><h2>Client feedback summary</h2><div class='statrow'>";
+    h += "<span class='stat'><b>" + ratedCount() + "</b>/" + imgs.length + " reviewed</span>";
+    h += "<span class='stat'><b>" + favs.length + "</b>favorites</span>";
+    h += "<span class='stat'><b>" + top.length + "</b>rated ★4+</span>";
+    h += "<span class='stat'><b>" + commented.length + "</b>with comments</span>";
+    h += "<span class='stat'><b>" + avg + "</b>avg rating</span>";
+    h += "</div><div class='adminbtns'>";
+    h += "<button class='chip' id='copysel'>Copy select filenames (♥ or ★4+)</button>";
+    h += "<button class='chip' id='dlcsv'>Download CSV</button>";
+    h += "</div></div>";
+    return h;
+  }
+
+  function lightboxShell() {
+    return "<div class='lb' id='lb'>" +
+      "<div class='lbtop'><span class='fname' id='lbname'></span><span class='lbcount' id='lbcountEl'></span>" +
+      "<button class='lbclose' id='lbclose' aria-label='Close'>✕</button></div>" +
+      "<div class='lbbody'><div class='lbstage'>" +
+      "<button class='navbtn prev' id='lbprev'>‹</button><img id='lbimg' src='' alt=''><button class='navbtn next' id='lbnext'>›</button>" +
+      "</div><div class='lbside' id='lbside'></div></div></div>";
+  }
+
+  function lbImage() { return S.lbIndex >= 0 ? filtered()[S.lbIndex] : null; }
+
+  function openLb(id) {
+    var list = filtered();
+    var ix = -1;
+    list.forEach(function (im, i) { if (im.id === id) ix = i; });
+    if (ix < 0) return;
+    S.lbIndex = ix;
+    document.getElementById("lb").classList.add("open");
+    paintLb();
+  }
+  function closeLb() { S.lbIndex = -1; document.getElementById("lb").classList.remove("open"); }
+  function navLb(d) {
+    var list = filtered();
+    if (!list.length) return;
+    S.lbIndex = (S.lbIndex + d + list.length) % list.length;
+    paintLb();
+  }
+  function paintLb() {
+    var img = lbImage(); if (!img) return;
+    var list = filtered();
+    document.getElementById("lbname").textContent = img.filename;
+    document.getElementById("lbcountEl").textContent = (S.lbIndex + 1) + " / " + list.length;
+    var el = document.getElementById("lbimg");
+    el.src = imgUrl(img.preview_path); el.alt = img.filename;
+    var nxt = list[(S.lbIndex + 1) % list.length];
+    if (nxt) { var pre = new Image(); pre.src = imgUrl(nxt.preview_path); }
+    var side = "";
+    side += "<div><div class='sidelabel'>Rating</div>" + starsHtml(img, "lbstars") + "</div>";
+    side += "<div><div class='sidelabel'>Favorite</div>" + favHtml(img) + "</div>";
+    side += "<div style='flex:1'><div class='sidelabel'>Comments</div><div class='comments' id='lbcomments'>" + commentsHtml(img) + "</div></div>";
+    side += "<div class='cform'><textarea id='cbox' placeholder='What do you think? e.g. love this one, crop tighter…'></textarea><button id='csend'>Post</button></div>";
+    side += "<div class='hint'>Keys: ← → browse · 1–5 rate · 0 clear · F favorite · Esc close</div>";
+    document.getElementById("lbside").innerHTML = side;
+    bindSide(img);
+  }
+  function commentsHtml(img) {
+    if (!img.comments.length) return "<div class='hint'>No comments yet.</div>";
+    var mine = isAdmin() ? "photographer" : "client";
+    return img.comments.map(function (c) {
+      var who = c.author === mine ? "You" : (c.author === "client" ? "Client" : "Photographer");
+      var del = isAdmin() ? "<button class='del' data-delc='" + c.id + "'>delete</button>" : "";
+      return "<div class='comment'><div class='who'><span>" + who + " · " + new Date(c.created_at).toLocaleDateString() + "</span>" + del + "</div>" + esc(c.body) + "</div>";
+    }).join("");
+  }
+  function bindSide(img) {
+    var box = document.getElementById("cbox"), send = document.getElementById("csend");
+    send.onclick = function () {
+      var v = box.value.trim(); if (!v) return;
+      send.disabled = true;
+      addComment(img, v, function (ok) {
+        send.disabled = false;
+        if (ok) { box.value = ""; document.getElementById("lbcomments").innerHTML = commentsHtml(img); bindDeletes(img); }
+      });
+    };
+    box.onkeydown = function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send.onclick(); e.stopPropagation(); };
+    bindDeletes(img);
+  }
+  function bindDeletes(img) {
+    document.querySelectorAll("[data-delc]").forEach(function (b) {
+      b.onclick = function () { deleteComment(img, b.getAttribute("data-delc")); };
+    });
+  }
+
+  function compareShell() {
+    return "<div class='cmp' id='cmp'><div class='cmptop'><h1 style='font-size:15px'>Compare</h1>" +
+      "<span class='sub'>rate each, or remove to narrow down</span>" +
+      "<button class='lbclose' id='cmpclose' aria-label='Close'>✕</button></div>" +
+      "<div class='cmppanes' id='cmppanes'></div></div>";
+  }
+  function openCompare() {
+    var panes = "";
+    S.sel.forEach(function (id) {
+      var img = byId(id); if (!img) return;
+      panes += "<div class='cmppane' data-pane='" + img.id + "'>";
+      panes += "<div class='pimg'><img src='" + imgUrl(img.preview_path) + "' alt='" + esc(img.filename) + "'></div>";
+      panes += "<div class='cmpmeta'><span class='fname'>" + esc(img.filename) + "</span>" + starsHtml(img) + favHtml(img);
+      panes += "<button class='rm' data-rm='" + img.id + "'>remove</button></div></div>";
+    });
+    document.getElementById("cmppanes").innerHTML = panes;
+    document.getElementById("cmp").classList.add("open");
+    bindActionEls(document.getElementById("cmp"));
+    document.querySelectorAll("[data-rm]").forEach(function (b) {
+      b.onclick = function () {
+        S.sel = S.sel.filter(function (x) { return x !== b.getAttribute("data-rm"); });
+        if (S.sel.length < 2) { closeCompare(); render(); } else openCompare();
+      };
+    });
+  }
+  function closeCompare() { document.getElementById("cmp").classList.remove("open"); }
+
+  function byId(id) {
+    for (var i = 0; i < S.images.length; i++) if (S.images[i].id === id) return S.images[i];
+    return null;
+  }
+
+  function refreshImageUI(img) {
+    // Re-render star/fav/comment widgets for this image everywhere they appear.
+    document.querySelectorAll(".stars[data-img='" + img.id + "']").forEach(function (el) {
+      el.querySelectorAll("button").forEach(function (b, i) {
+        var lit = (img.rating || 0) >= i + 1;
+        b.className = lit ? "lit" : ""; b.textContent = lit ? "★" : "☆";
+      });
+    });
+    document.querySelectorAll(".favbtn[data-fav='" + img.id + "']").forEach(function (el) {
+      el.className = "favbtn" + (img.favorite ? " on" : ""); el.textContent = img.favorite ? "♥" : "♡";
+    });
+    var card = document.querySelector("[data-card='" + img.id + "'] .cbadge");
+    if (card) card.textContent = img.comments.length ? "💬 " + img.comments.length : "";
+    updateProgress();
+  }
+
+  function bindActionEls(root) {
+    root.querySelectorAll(".stars[data-img]").forEach(function (el) {
+      var img = byId(el.getAttribute("data-img"));
+      el.querySelectorAll("button").forEach(function (b) {
+        b.onclick = function (e) { e.stopPropagation(); setRating(img, parseInt(b.getAttribute("data-star"), 10)); };
+      });
+    });
+    root.querySelectorAll(".favbtn[data-fav]").forEach(function (el) {
+      var img = byId(el.getAttribute("data-fav"));
+      el.onclick = function (e) { e.stopPropagation(); toggleFav(img); };
+    });
+  }
+
+  function bind() {
+    bindActionEls(document);
+    document.querySelectorAll("[data-filter]").forEach(function (b) {
+      b.onclick = function () { S.filter = b.getAttribute("data-filter"); render(); };
+    });
+    document.querySelectorAll("[data-open]").forEach(function (el) {
+      el.onclick = function () {
+        var id = el.getAttribute("data-open");
+        if (S.compareMode) {
+          var ix = S.sel.indexOf(id);
+          if (ix >= 0) S.sel.splice(ix, 1);
+          else if (S.sel.length < 3) S.sel.push(id);
+          else { toast("Compare up to 3 at a time."); return; }
+          render();
+        } else openLb(id);
+      };
+    });
+    var cm = document.getElementById("cmpmode");
+    if (cm) cm.onclick = function () { S.compareMode = !S.compareMode; if (!S.compareMode) S.sel = []; render(); };
+    var cg = document.getElementById("cmpgo");
+    if (cg) cg.onclick = openCompare;
+    document.getElementById("lbclose").onclick = closeLb;
+    document.getElementById("lbprev").onclick = function () { navLb(-1); };
+    document.getElementById("lbnext").onclick = function () { navLb(1); };
+    document.getElementById("cmpclose").onclick = function () { closeCompare(); render(); };
+    var stage = document.querySelector(".lbstage");
+    var tx = null;
+    stage.addEventListener("touchstart", function (e) { tx = e.touches[0].clientX; }, { passive: true });
+    stage.addEventListener("touchend", function (e) {
+      if (tx === null) return;
+      var dx = e.changedTouches[0].clientX - tx; tx = null;
+      if (Math.abs(dx) > 45) navLb(dx > 0 ? -1 : 1);
+    }, { passive: true });
+    var cp = document.getElementById("copysel");
+    if (cp) cp.onclick = function () {
+      var names = S.images.filter(function (i) { return i.favorite || (i.rating || 0) >= 4; })
+        .map(function (i) { return i.filename; });
+      navigator.clipboard.writeText(names.join("\n")).then(function () {
+        toast("Copied " + names.length + " filenames.");
+      });
+    };
+    var dl = document.getElementById("dlcsv");
+    if (dl) dl.onclick = function () {
+      var rows = [["filename", "rating", "favorite", "comments"]];
+      S.images.forEach(function (i) {
+        rows.push([i.filename, i.rating || "", i.favorite ? "yes" : "",
+          i.comments.map(function (c) { return c.author + ": " + c.body.replace(/\s+/g, " "); }).join(" | ")]);
+      });
+      var csv = rows.map(function (r) {
+        return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(",");
+      }).join("\n");
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = "roxy-proofs-feedback.csv"; a.click();
+    };
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (document.getElementById("cmp") && document.getElementById("cmp").classList.contains("open")) {
+      if (e.key === "Escape") { closeCompare(); render(); }
+      return;
+    }
+    var img = lbImage(); if (!img) return;
+    if (e.target && e.target.tagName === "TEXTAREA") return;
+    if (e.key === "Escape") closeLb();
+    else if (e.key === "ArrowLeft") navLb(-1);
+    else if (e.key === "ArrowRight") navLb(1);
+    else if (e.key >= "1" && e.key <= "5") setRating(img, parseInt(e.key, 10));
+    else if (e.key === "0") { img.rating = null; pushFeedback(img); refreshImageUI(img); paintLb(); }
+    else if (e.key === "f" || e.key === "F") toggleFav(img);
+  });
+
+  if (!token) {
+    app.innerHTML = "<div class='center'>This gallery needs an access link.<br>Please use the link you were sent.</div>";
+    return;
+  }
+  rpc("proof_get_gallery", { p_token: token })
+    .then(function (data) {
+      S.data = data;
+      S.images = data.images || [];
+      document.title = "SFTL · " + data.gallery.title;
+      render();
+    })
+    .catch(function () {
+      app.innerHTML = "<div class='center'>This link isn't valid or has expired.<br>Please check with your photographer.</div>";
+    });
+})();
+</script>
+</body>
+</html>
