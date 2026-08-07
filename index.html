@@ -79,9 +79,7 @@
   .stars button { font-size: 17px; line-height: 1; color: #4d4d4d; padding: 2px 1px; transition: color .1s, transform .05s; }
   .stars button.lit { color: var(--star); }
   .stars button:active { transform: scale(1.25); }
-  .favbtn { font-size: 16px; color: #4d4d4d; padding: 2px 4px; margin-left: auto; }
-  .favbtn.on { color: var(--fav); }
-  .cbadge { font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 1px 7px; }
+  .cbadge { font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 1px 7px; margin-left: auto; }
   .cbadge:empty { display: none; }
 
   /* Lightbox */
@@ -109,7 +107,6 @@
     display: flex; flex-direction: column; padding: 16px; gap: 14px; overflow-y: auto;
   }
   .lbside .stars button { font-size: 26px; padding: 2px 3px; }
-  .lbside .favbtn { font-size: 22px; margin-left: 0; }
   .sidelabel { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin-bottom: 6px; }
   .comments { display: flex; flex-direction: column; gap: 10px; }
   .comment { background: var(--panel2); border-radius: 8px; padding: 8px 11px; font-size: 13.5px; }
@@ -153,6 +150,21 @@
   .stat { background: var(--panel2); border-radius: 8px; padding: 8px 14px; font-size: 13px; color: var(--dim); }
   .stat b { color: var(--text); font-size: 16px; margin-right: 5px; }
   .adminbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Intro / compare helper */
+  .intro {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 18px; font-size: 14px; color: var(--dim);
+    display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;
+  }
+  .intro .body { flex: 1; min-width: 240px; }
+  .intro h2 { font-size: 13px; color: var(--text); margin-bottom: 5px; }
+  .intro b { color: var(--text); font-weight: 600; }
+  .intro .chip { flex-shrink: 0; }
+  .cmphelp {
+    margin-top: 10px; font-size: 13px; color: var(--accent);
+    border: 1px dashed var(--accent); border-radius: 8px; padding: 7px 12px;
+  }
 
   .toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 99;
@@ -203,14 +215,13 @@
 
   function isAdmin() { return S.data && S.data.role === "admin"; }
   function ratedCount() {
-    return S.images.filter(function (i) { return i.rating || i.favorite || i.comments.length; }).length;
+    return S.images.filter(function (i) { return i.rating || i.comments.length; }).length;
   }
   function filtered() {
     var f = S.filter;
     return S.images.filter(function (i) {
       if (f === "all") return true;
-      if (f === "unrated") return !i.rating && !i.favorite && !i.comments.length;
-      if (f === "favorites") return i.favorite;
+      if (f === "unrated") return !i.rating && !i.comments.length;
       if (f === "commented") return i.comments.length > 0;
       if (f === "top") return (i.rating || 0) >= 4;
       return true;
@@ -219,16 +230,12 @@
 
   function pushFeedback(img) {
     S.pending++; saveState("Saving…");
-    rpc("proof_set_feedback", { p_token: token, p_image_id: img.id, p_rating: img.rating || null, p_favorite: !!img.favorite })
+    rpc("proof_set_feedback", { p_token: token, p_image_id: img.id, p_rating: img.rating || null, p_favorite: false })
       .then(function () { S.pending--; if (!S.pending) saveState("Saved ✓"); })
       .catch(function () { S.pending--; saveState("Save failed", true); toast("Couldn't save — check your connection and try again."); });
   }
   function setRating(img, n) {
     img.rating = (img.rating === n) ? null : n;
-    pushFeedback(img); refreshImageUI(img);
-  }
-  function toggleFav(img) {
-    img.favorite = !img.favorite;
     pushFeedback(img); refreshImageUI(img);
   }
   function addComment(img, body, done) {
@@ -252,9 +259,6 @@
     }
     return h + "</span>";
   }
-  function favHtml(img) {
-    return '<button class="favbtn ' + (img.favorite ? "on" : "") + '" data-fav="' + img.id + '" aria-label="Favorite">' + (img.favorite ? "♥" : "♡") + "</button>";
-  }
 
   function render() {
     var g = S.data.gallery;
@@ -267,18 +271,25 @@
     h += "</div>";
     h += "<div class='progresswrap'><div class='pbar'><i id='pfill'></i></div><span class='pcount' id='pcount'></span></div>";
     h += "<div class='toolbar'>";
-    var chips = [["all", "All"], ["unrated", "To review"], ["favorites", "♥ Favorites"], ["top", "★ 4+"], ["commented", "Commented"]];
+    var chips = [["all", "All"], ["unrated", "To review"], ["top", "★ 4+"], ["commented", "Commented"]];
     chips.forEach(function (c) {
       h += "<button class='chip " + (S.filter === c[0] ? "on" : "") + "' data-filter='" + c[0] + "'>" + c[1] + "</button>";
     });
     h += "<span class='spacer'></span>";
-    h += "<button class='chip " + (S.compareMode ? "on" : "") + "' id='cmpmode'>Compare: " + (S.compareMode ? "pick 2–3" : "off") + "</button>";
-    if (S.compareMode && S.sel.length >= 2) h += "<button class='chip warn' id='cmpgo'>Compare " + S.sel.length + " →</button>";
+    h += "<button class='chip " + (S.compareMode ? "on" : "") + "' id='cmpmode'>" + (S.compareMode ? "✕ Exit compare" : "⇄ Compare similar shots") + "</button>";
+    if (S.compareMode && S.sel.length >= 2) h += "<button class='chip warn' id='cmpgo'>View side by side (" + S.sel.length + ")</button>";
     h += "<span class='savestate' id='savestate'></span>";
-    h += "</div></header>";
+    h += "</div>";
+    if (S.compareMode) {
+      h += "<div class='cmphelp'>" + (S.sel.length < 2
+        ? "Tap 2–3 similar photos below to select them — then a \"View side by side\" button will appear here."
+        : S.sel.length + " selected — press \"View side by side\", or tap more photos (up to 3).") + "</div>";
+    }
+    h += "</header>";
 
     h += "<main>";
     if (isAdmin()) h += adminHtml();
+    else if (!localStorage.getItem("sftl-intro-" + S.data.gallery.id)) h += introHtml();
     if (!list.length) {
       h += "<div class='empty'>Nothing in this view yet.</div>";
     } else {
@@ -289,7 +300,7 @@
         h += "<div class='imgwrap' data-open='" + img.id + "'><img loading='lazy' src='" + imgUrl(img.thumb_path) + "' alt='" + esc(img.filename) + "'>";
         h += "<span class='selbadge'>" + (selIdx + 1) + "</span></div>";
         h += "<div class='cardmeta'><div class='fname'>" + esc(img.filename) + "</div>";
-        h += "<div class='cardrow'>" + starsHtml(img) + "<span class='cbadge'>" + (img.comments.length ? "💬 " + img.comments.length : "") + "</span>" + favHtml(img) + "</div>";
+        h += "<div class='cardrow'>" + starsHtml(img) + "<span class='cbadge'>" + (img.comments.length ? "💬 " + img.comments.length : "") + "</span></div>";
         h += "</div></div>";
       });
       h += "</div>";
@@ -307,24 +318,31 @@
     var total = S.images.length, done = ratedCount();
     var f = document.getElementById("pfill"), c = document.getElementById("pcount");
     if (f) f.style.width = (total ? Math.round(done / total * 100) : 0) + "%";
-    if (c) c.textContent = done + " of " + total + " reviewed";
+    if (c) c.textContent = done + " of " + total + " rated";
+  }
+
+  function introHtml() {
+    return "<div class='intro'><div class='body'><h2>How to review</h2>" +
+      "Tap any photo to see it big, then give it stars. <b>4–5 stars means “yes, work your magic on this one”</b> — " +
+      "3 is a maybe, 1–2 means skip it. You don't have to rate every single frame; rating the ones that stand out " +
+      "(good or bad) is plenty. Add a comment if you'd like something specific — a crop, colour, retouching. " +
+      "Torn between similar shots? Use <b>⇄ Compare</b> (top right) to view them side by side. Everything saves automatically." +
+      "</div><button class='chip' id='introok'>Got it</button></div>";
   }
 
   function adminHtml() {
     var imgs = S.images;
-    var favs = imgs.filter(function (i) { return i.favorite; });
     var top = imgs.filter(function (i) { return (i.rating || 0) >= 4; });
     var commented = imgs.filter(function (i) { return i.comments.length; });
     var avgArr = imgs.filter(function (i) { return i.rating; });
     var avg = avgArr.length ? (avgArr.reduce(function (a, i) { return a + i.rating; }, 0) / avgArr.length).toFixed(1) : "—";
-    var h = "<div class='admin'><h2>Client feedback summary</h2><div class='statrow'>";
-    h += "<span class='stat'><b>" + ratedCount() + "</b>/" + imgs.length + " reviewed</span>";
-    h += "<span class='stat'><b>" + favs.length + "</b>favorites</span>";
-    h += "<span class='stat'><b>" + top.length + "</b>rated ★4+</span>";
+    var h = "<div class='admin'><h2>Client feedback summary <span class='hint'>(clients are told: ★4+ = edit, 3 = maybe, 1–2 = skip)</span></h2><div class='statrow'>";
+    h += "<span class='stat'><b>" + ratedCount() + "</b>/" + imgs.length + " rated</span>";
+    h += "<span class='stat'><b>" + top.length + "</b>to edit (★4+)</span>";
     h += "<span class='stat'><b>" + commented.length + "</b>with comments</span>";
     h += "<span class='stat'><b>" + avg + "</b>avg rating</span>";
     h += "</div><div class='adminbtns'>";
-    h += "<button class='chip' id='copysel'>Copy select filenames (♥ or ★4+)</button>";
+    h += "<button class='chip' id='copysel'>Copy edit-list filenames (★4+)</button>";
     h += "<button class='chip' id='dlcsv'>Download CSV</button>";
     h += "</div></div>";
     return h;
@@ -367,12 +385,13 @@
     var nxt = list[(S.lbIndex + 1) % list.length];
     if (nxt) { var pre = new Image(); pre.src = imgUrl(nxt.preview_path); }
     var side = "";
-    side += "<div><div class='sidelabel'>Rating</div>" + starsHtml(img, "lbstars") + "</div>";
-    side += "<div><div class='sidelabel'>Favorite</div>" + favHtml(img) + "</div>";
+    side += "<div><div class='sidelabel'>Rating</div>" + starsHtml(img, "lbstars") +
+      "<div class='hint' style='margin-top:5px'>4–5★ = edit this one · 3★ = maybe · 1–2★ = skip</div></div>";
     side += "<div style='flex:1'><div class='sidelabel'>Comments</div><div class='comments' id='lbcomments'>" + commentsHtml(img) + "</div></div>";
     side += "<div class='cform'><textarea id='cbox' placeholder='What do you think? e.g. love this one, crop tighter…'></textarea><button id='csend'>Post</button></div>";
-    side += "<div class='hint'>Keys: ← → browse · 1–5 rate · 0 clear · F favorite · Esc close</div>";
+    side += "<div class='hint'>Keys: ← → browse · 1–5 rate · 0 clear · Esc close</div>";
     document.getElementById("lbside").innerHTML = side;
+    bindActionEls(document.getElementById("lbside"));
     bindSide(img);
   }
   function commentsHtml(img) {
@@ -415,7 +434,7 @@
       var img = byId(id); if (!img) return;
       panes += "<div class='cmppane' data-pane='" + img.id + "'>";
       panes += "<div class='pimg'><img src='" + imgUrl(img.preview_path) + "' alt='" + esc(img.filename) + "'></div>";
-      panes += "<div class='cmpmeta'><span class='fname'>" + esc(img.filename) + "</span>" + starsHtml(img) + favHtml(img);
+      panes += "<div class='cmpmeta'><span class='fname'>" + esc(img.filename) + "</span>" + starsHtml(img);
       panes += "<button class='rm' data-rm='" + img.id + "'>remove</button></div></div>";
     });
     document.getElementById("cmppanes").innerHTML = panes;
@@ -443,9 +462,6 @@
         b.className = lit ? "lit" : ""; b.textContent = lit ? "★" : "☆";
       });
     });
-    document.querySelectorAll(".favbtn[data-fav='" + img.id + "']").forEach(function (el) {
-      el.className = "favbtn" + (img.favorite ? " on" : ""); el.textContent = img.favorite ? "♥" : "♡";
-    });
     var card = document.querySelector("[data-card='" + img.id + "'] .cbadge");
     if (card) card.textContent = img.comments.length ? "💬 " + img.comments.length : "";
     updateProgress();
@@ -457,10 +473,6 @@
       el.querySelectorAll("button").forEach(function (b) {
         b.onclick = function (e) { e.stopPropagation(); setRating(img, parseInt(b.getAttribute("data-star"), 10)); };
       });
-    });
-    root.querySelectorAll(".favbtn[data-fav]").forEach(function (el) {
-      var img = byId(el.getAttribute("data-fav"));
-      el.onclick = function (e) { e.stopPropagation(); toggleFav(img); };
     });
   }
 
@@ -497,9 +509,14 @@
       var dx = e.changedTouches[0].clientX - tx; tx = null;
       if (Math.abs(dx) > 45) navLb(dx > 0 ? -1 : 1);
     }, { passive: true });
+    var io = document.getElementById("introok");
+    if (io) io.onclick = function () {
+      localStorage.setItem("sftl-intro-" + S.data.gallery.id, "1");
+      render();
+    };
     var cp = document.getElementById("copysel");
     if (cp) cp.onclick = function () {
-      var names = S.images.filter(function (i) { return i.favorite || (i.rating || 0) >= 4; })
+      var names = S.images.filter(function (i) { return (i.rating || 0) >= 4; })
         .map(function (i) { return i.filename; });
       navigator.clipboard.writeText(names.join("\n")).then(function () {
         toast("Copied " + names.length + " filenames.");
@@ -507,9 +524,9 @@
     };
     var dl = document.getElementById("dlcsv");
     if (dl) dl.onclick = function () {
-      var rows = [["filename", "rating", "favorite", "comments"]];
+      var rows = [["filename", "rating", "comments"]];
       S.images.forEach(function (i) {
-        rows.push([i.filename, i.rating || "", i.favorite ? "yes" : "",
+        rows.push([i.filename, i.rating || "",
           i.comments.map(function (c) { return c.author + ": " + c.body.replace(/\s+/g, " "); }).join(" | ")]);
       });
       var csv = rows.map(function (r) {
@@ -517,7 +534,7 @@
       }).join("\n");
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-      a.download = "roxy-proofs-feedback.csv"; a.click();
+      a.download = (S.data.gallery.slug || "gallery") + "-proofs-feedback.csv"; a.click();
     };
   }
 
@@ -532,8 +549,7 @@
     else if (e.key === "ArrowLeft") navLb(-1);
     else if (e.key === "ArrowRight") navLb(1);
     else if (e.key >= "1" && e.key <= "5") setRating(img, parseInt(e.key, 10));
-    else if (e.key === "0") { img.rating = null; pushFeedback(img); refreshImageUI(img); paintLb(); }
-    else if (e.key === "f" || e.key === "F") toggleFav(img);
+    else if (e.key === "0") { img.rating = null; pushFeedback(img); refreshImageUI(img); }
   });
 
   if (!token) {
