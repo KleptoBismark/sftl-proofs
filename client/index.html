@@ -29,8 +29,13 @@
     backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
     padding: 12px 18px;
   }
-  .brand { margin-bottom: 7px; }
-  .brand img { height: 16px; display: block; }
+  .brand {
+    display: inline-flex; align-items: center; gap: 9px; margin-bottom: 7px;
+    font-size: 10.5px; letter-spacing: .24em; color: var(--dim);
+    text-decoration: none;
+  }
+  .brand img { width: 20px; height: 20px; display: block; }
+  .brand:hover { color: var(--text); }
   .hrow { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
   h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
   .sub { color: var(--dim); font-size: 13px; }
@@ -271,7 +276,7 @@
     var list = filtered();
     var total = S.images.length;
     var h = "";
-    h += "<header><div class='brand'><a href='../'><img src='../assets/brand/sftl-lockup-dark.svg' alt='Stories From The Lens'></a></div><div class='hrow'><h1>" + esc(g.title) + "</h1>";
+    h += "<header><a class='brand' href='../'><img src='../assets/brand/sftl-mark-small.svg' alt=''><span>STORIES FROM THE LENS</span></a><div class='hrow'><h1>" + esc(g.title) + "</h1>";
     h += "<span class='sub'>" + total + " photos · straight out of camera</span>";
     if (isAdmin()) h += "<span class='rolebadge'>Photographer view</span>";
     h += "</div>";
