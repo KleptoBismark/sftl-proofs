@@ -38,7 +38,12 @@
     display: flex; align-items: center; gap: 28px;
     padding: 22px 0;
   }
-  .nav img { height: 18px; }
+  .nav .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 12px; letter-spacing: .24em; color: var(--ink);
+    text-decoration: none;
+  }
+  .nav .brand img { width: 22px; height: 22px; display: block; }
   .nav .links { margin-left: auto; display: flex; gap: 22px; flex-wrap: wrap; }
   .nav a {
     font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
@@ -107,7 +112,7 @@
 <body>
 <header>
   <div class="wrap nav">
-    <img src="assets/brand/sftl-lockup.svg" alt="Stories From The Lens">
+    <a class="brand" href="./"><img src="assets/brand/sftl-mark-small.svg" alt=""><span>STORIES FROM THE LENS</span></a>
     <nav class="links">
       <a href="#work">Work</a>
       <a href="#about">About</a>
