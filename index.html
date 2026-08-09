@@ -62,6 +62,32 @@
   section p { color: var(--grey); max-width: 560px; }
   .soon { font-size: 13px; letter-spacing: .04em; }
 
+  .wrapwide { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .cat { margin-top: 46px; }
+  .cat h3 {
+    font-size: 12px; font-weight: 400; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--grey); margin-bottom: 14px;
+  }
+  .lead { margin: 28px 0 0; cursor: pointer; }
+  .lead img { width: 100%; }
+  .masonry { columns: 3 280px; column-gap: 12px; }
+  .masonry figure { margin: 0 0 12px; break-inside: avoid; cursor: pointer; }
+  .masonry img { width: 100%; }
+  .lb {
+    position: fixed; inset: 0; background: rgba(16,16,16,.97);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+  }
+  .lb.open { display: flex; }
+  .lb img { max-width: 94vw; max-height: 92vh; object-fit: contain; }
+  .lb button {
+    position: absolute; background: none; border: none; color: var(--paper);
+    font-size: 34px; cursor: pointer; padding: 18px; opacity: .7; line-height: 1;
+  }
+  .lb button:hover { opacity: 1; }
+  .lb .x { top: 8px; right: 12px; }
+  .lb .p { left: 6px; top: 50%; transform: translateY(-50%); }
+  .lb .n { right: 6px; top: 50%; transform: translateY(-50%); }
+
   .portal {
     margin-top: 20px; display: inline-block;
     border: 1px solid var(--ink); padding: 11px 22px;
@@ -98,9 +124,73 @@
 </div>
 
 <section id="work">
-  <div class="wrap">
+  <div class="wrapwide">
     <h2>Work</h2>
-    <p class="soon">A curated selection is being prepared.</p>
+
+    <figure class="lead">
+      <img src="assets/work/full/sftl_1612060130-pano.jpg" data-full="assets/work/full/sftl_1612060130-pano.jpg" alt="Panorama — Stories From The Lens">
+    </figure>
+
+    <div class="cat">
+      <h3>Street &amp; Travel</h3>
+      <div class="masonry">
+        <figure><img loading="lazy" src="assets/work/thumb/20260510_aeropresstaladnoi_0051.jpg" data-full="assets/work/full/20260510_aeropresstaladnoi_0051.jpg" alt="Street photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/20260510_aeropresstaladnoi_0071.jpg" data-full="assets/work/full/20260510_aeropresstaladnoi_0071.jpg" alt="Travel photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612070277.jpg" data-full="assets/work/full/sftl_1612070277.jpg" alt="Travel photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612160599.jpg" data-full="assets/work/full/sftl_1612160599.jpg" alt="Street photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612221221.jpg" data-full="assets/work/full/sftl_1612221221.jpg" alt="Street photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1708105515.jpg" data-full="assets/work/full/sftl_1708105515.jpg" alt="Street photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1710145615.jpg" data-full="assets/work/full/sftl_1710145615.jpg" alt="Street photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1802167799.jpg" data-full="assets/work/full/sftl_1802167799.jpg" alt="Landscape photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/moses_1508310967.jpg" data-full="assets/work/full/moses_1508310967.jpg" alt="Landscape photography"></figure>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h3>Portraits &amp; People</h3>
+      <div class="masonry">
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612070255.jpg" data-full="assets/work/full/sftl_1612070255.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612110036.jpg" data-full="assets/work/full/sftl_1612110036.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612110056.jpg" data-full="assets/work/full/sftl_1612110056.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612110084.jpg" data-full="assets/work/full/sftl_1612110084.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612251600.jpg" data-full="assets/work/full/sftl_1612251600.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612251664.jpg" data-full="assets/work/full/sftl_1612251664.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1705215051-2.jpg" data-full="assets/work/full/sftl_1705215051-2.jpg" alt="Beauty portrait"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1705215207.jpg" data-full="assets/work/full/sftl_1705215207.jpg" alt="Portrait photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1804298199.jpg" data-full="assets/work/full/sftl_1804298199.jpg" alt="Portrait photography"></figure>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h3>Events &amp; Live Music</h3>
+      <div class="masonry">
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1610079539.jpg" data-full="assets/work/full/sftl_1610079539.jpg" alt="Event photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612251696.jpg" data-full="assets/work/full/sftl_1612251696.jpg" alt="Muay Thai fight night"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1710155801.jpg" data-full="assets/work/full/sftl_1710155801.jpg" alt="Live music photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1804308375.jpg" data-full="assets/work/full/sftl_1804308375.jpg" alt="Event photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1712177070.jpg" data-full="assets/work/full/sftl_1712177070.jpg" alt="Live music photography"></figure>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h3>Weddings</h3>
+      <div class="masonry">
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024138.jpg" data-full="assets/work/full/sftl_1702112024138.jpg" alt="Wedding photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024336.jpg" data-full="assets/work/full/sftl_1702112024336.jpg" alt="Wedding photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024338.jpg" data-full="assets/work/full/sftl_1702112024338.jpg" alt="Wedding photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024748.jpg" data-full="assets/work/full/sftl_1702112024748.jpg" alt="Wedding photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702114419.jpg" data-full="assets/work/full/sftl_1702114419.jpg" alt="Wedding ceremony"></figure>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h3>Animals</h3>
+      <div class="masonry">
+        <figure><img loading="lazy" src="assets/work/thumb/sftl_1711186625.jpg" data-full="assets/work/full/sftl_1711186625.jpg" alt="Animal photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/moses_071020_4186.jpg" data-full="assets/work/full/moses_071020_4186.jpg" alt="Animal photography"></figure>
+        <figure><img loading="lazy" src="assets/work/thumb/moses_1509111653.jpg" data-full="assets/work/full/moses_1509111653.jpg" alt="Animal photography"></figure>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -133,5 +223,36 @@
     <span class="right">storiesfromthelens.com</span>
   </div>
 </footer>
+
+<div class="lb" id="lb">
+  <button class="x" aria-label="Close">✕</button>
+  <button class="p" aria-label="Previous">‹</button>
+  <img id="lbimg" src="" alt="">
+  <button class="n" aria-label="Next">›</button>
+</div>
+<script>
+(function () {
+  var figs = Array.prototype.slice.call(document.querySelectorAll("#work [data-full]"));
+  var lb = document.getElementById("lb"), im = document.getElementById("lbimg"), i = -1;
+  function show(n) {
+    i = (n + figs.length) % figs.length;
+    im.src = figs[i].getAttribute("data-full");
+    im.alt = figs[i].alt || "";
+    lb.classList.add("open");
+  }
+  function close() { lb.classList.remove("open"); im.src = ""; i = -1; }
+  figs.forEach(function (f, n) { f.addEventListener("click", function () { show(n); }); });
+  lb.querySelector(".x").addEventListener("click", close);
+  lb.querySelector(".p").addEventListener("click", function (e) { e.stopPropagation(); show(i - 1); });
+  lb.querySelector(".n").addEventListener("click", function (e) { e.stopPropagation(); show(i + 1); });
+  lb.addEventListener("click", function (e) { if (e.target === lb || e.target === im) close(); });
+  document.addEventListener("keydown", function (e) {
+    if (!lb.classList.contains("open")) return;
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowLeft") show(i - 1);
+    else if (e.key === "ArrowRight") show(i + 1);
+  });
+})();
+</script>
 </body>
 </html>
