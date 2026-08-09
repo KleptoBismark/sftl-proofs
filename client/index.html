@@ -224,6 +224,53 @@
     if (el) { el.textContent = txt; el.className = "savestate" + (err ? " err" : ""); }
   }
 
+  var CRC_T = (function () {
+    var t = [], c, k, n;
+    for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(u8) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  // Minimal STORE-method zip (JPEGs don't recompress) — no libraries.
+  function makeZip(entries) {
+    var parts = [], central = [], offset = 0, enc = new TextEncoder();
+    entries.forEach(function (e) {
+      var nm = enc.encode(e.name), sz = e.data.length, crc = crc32(e.data);
+      var lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true);
+      lh.setUint16(26, nm.length, true);
+      parts.push(new Uint8Array(lh.buffer), nm, e.data);
+      var cd = new DataView(new ArrayBuffer(46));
+      cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+      cd.setUint32(16, crc, true); cd.setUint32(20, sz, true); cd.setUint32(24, sz, true);
+      cd.setUint16(28, nm.length, true); cd.setUint32(42, offset, true);
+      central.push(new Uint8Array(cd.buffer), nm);
+      offset += 30 + nm.length + sz;
+    });
+    var cdSize = 0;
+    central.forEach(function (p) { cdSize += p.length; });
+    var eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true);
+    eocd.setUint16(8, entries.length, true); eocd.setUint16(10, entries.length, true);
+    eocd.setUint32(12, cdSize, true); eocd.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [new Uint8Array(eocd.buffer)]), { type: "application/zip" });
+  }
+  function saveBlob(blob, name) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+  }
+  function downloadOne(img) {
+    return fetch(imgUrl(img.preview_path))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
+      .then(function (b) { saveBlob(b, img.filename); })
+      .catch(function () { toast("Download failed — check your connection and try again."); });
+  }
+
   function isAdmin() { return S.data && S.data.role === "admin"; }
   function ratedCount() {
     return S.images.filter(function (i) { return i.rating || i.comments.length; }).length;
@@ -287,6 +334,7 @@
       h += "<button class='chip " + (S.filter === c[0] ? "on" : "") + "' data-filter='" + c[0] + "'>" + c[1] + "</button>";
     });
     h += "<span class='spacer'></span>";
+    h += "<button class='chip' id='dlall'>⬇ Download all</button>";
     h += "<button class='chip " + (S.compareMode ? "on" : "") + "' id='cmpmode'>" + (S.compareMode ? "✕ Exit compare" : "⇄ Compare similar shots") + "</button>";
     if (S.compareMode && S.sel.length >= 2) h += "<button class='chip warn' id='cmpgo'>View side by side (" + S.sel.length + ")</button>";
     h += "<span class='savestate' id='savestate'></span>";
@@ -337,7 +385,8 @@
       "Tap any photo to see it big, then give it stars. <b>4–5 stars means “yes, work your magic on this one”</b> — " +
       "3 is a maybe, 1–2 means skip it. You don't have to rate every single frame; rating the ones that stand out " +
       "(good or bad) is plenty. Add a comment if you'd like something specific — a crop, colour, retouching. " +
-      "Torn between similar shots? Use <b>⇄ Compare</b> (top right) to view them side by side. Everything saves automatically." +
+      "Torn between similar shots? Use <b>⇄ Compare</b> (top right) to view them side by side. Everything saves automatically. " +
+      "You can also <b>download</b> any photo (or all of them) — downloads are web-quality JPEGs, great for screens and small prints; ask about print-quality files." +
       "</div><button class='chip' id='introok'>Got it</button></div>";
   }
 
@@ -398,11 +447,14 @@
     var side = "";
     side += "<div><div class='sidelabel'>Rating</div>" + starsHtml(img, "lbstars") +
       "<div class='hint' style='margin-top:5px'>4–5★ = edit this one · 3★ = maybe · 1–2★ = skip</div></div>";
+    side += "<div><div class='sidelabel'>Download</div><button class='chip' id='dlone'>⬇ Download this photo</button>" +
+      "<div class='hint' style='margin-top:5px'>Web-quality JPEG — great for screens, sharing and small prints. Ask your photographer about print-quality files.</div></div>";
     side += "<div style='flex:1'><div class='sidelabel'>Comments</div><div class='comments' id='lbcomments'>" + commentsHtml(img) + "</div></div>";
     side += "<div class='cform'><textarea id='cbox' placeholder='What do you think? e.g. love this one, crop tighter…'></textarea><button id='csend'>Post</button></div>";
     side += "<div class='hint'>Keys: ← → browse · 1–5 rate · 0 clear · Esc close</div>";
     document.getElementById("lbside").innerHTML = side;
     bindActionEls(document.getElementById("lbside"));
+    document.getElementById("dlone").onclick = function () { downloadOne(img); };
     bindSide(img);
   }
   function commentsHtml(img) {
@@ -506,6 +558,26 @@
         } else openLb(id);
       };
     });
+    var da = document.getElementById("dlall");
+    if (da) da.onclick = function () {
+      if (da.disabled) return;
+      da.disabled = true;
+      var imgs = S.images, files = [], failed = 0, chain = Promise.resolve();
+      imgs.forEach(function (img, ix) {
+        chain = chain.then(function () {
+          da.textContent = "⬇ Preparing… " + (ix + 1) + "/" + imgs.length;
+          return fetch(imgUrl(img.preview_path))
+            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+            .then(function (buf) { files.push({ name: img.filename, data: new Uint8Array(buf) }); })
+            .catch(function () { failed++; });
+        });
+      });
+      chain.then(function () {
+        if (files.length) saveBlob(makeZip(files), (S.data.gallery.slug || "gallery") + "-photos.zip");
+        da.textContent = "⬇ Download all"; da.disabled = false;
+        toast(failed ? failed + " photo(s) failed to download — try again." : "Zip of " + files.length + " photos saved. Web-quality JPEGs — ask about print-quality files.", 3500);
+      });
+    };
     var cm = document.getElementById("cmpmode");
     if (cm) cm.onclick = function () { S.compareMode = !S.compareMode; if (!S.compareMode) S.sel = []; render(); };
     var cg = document.getElementById("cmpgo");
