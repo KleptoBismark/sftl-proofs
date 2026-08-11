@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>SFTL — Finals</title>
+<link rel="icon" type="image/svg+xml" href="../../assets/brand/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../assets/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="../../assets/brand/favicon-180.png">
+<style>
+  :root {
+    --bg: #131313; --panel: #1c1c1c; --panel2: #242424; --line: #303030;
+    --text: #ececec; --dim: #9a9a9a; --star: #f0b429;
+    --accent: #C13A2E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  a { color: inherit; }
+
+  header {
+    position: sticky; top: 0; z-index: 20; background: rgba(19,19,19,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+    padding: 12px 18px;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 9px; margin-bottom: 7px;
+    font-size: 10.5px; letter-spacing: .24em; color: var(--dim);
+    text-decoration: none;
+  }
+  .brand img { width: 20px; height: 20px; display: block; }
+  .brand:hover { color: var(--text); }
+  .hrow { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
+  .rolebadge {
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 99px; padding: 2px 9px;
+  }
+
+  main { padding: 16px; max-width: 760px; margin: 0 auto; }
+  .center { padding: 60px 20px; text-align: center; color: var(--dim); }
+  .intro { color: var(--dim); font-size: 13.5px; margin: 4px 2px 16px; }
+
+  .fcard {
+    display: flex; gap: 14px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 12px;
+  }
+  .fthumb {
+    width: 96px; height: 72px; flex: none; border-radius: 5px;
+    object-fit: cover; background: var(--panel2); display: block;
+  }
+  .fmeta { min-width: 0; flex: 1; }
+  .fname {
+    font-size: 13.5px; font-weight: 600; word-break: break-all;
+    margin-bottom: 3px;
+  }
+  .fsub { color: var(--dim); font-size: 12.5px; }
+  .fsub .r { color: var(--star); }
+  .dl {
+    flex: none; border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 99px; padding: 7px 15px; font-size: 13px;
+    text-decoration: none; transition: .15s; white-space: nowrap;
+  }
+  .dl:hover { background: var(--accent); color: #FCFCFA; }
+
+  @media (max-width: 480px) {
+    .fcard { flex-wrap: wrap; }
+    .dl { width: 100%; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="../../"><img src="../../assets/brand/sftl-mark-small.svg" alt="">STORIES FROM THE LENS</a>
+  <div class="hrow">
+    <h1 id="title">Finals</h1>
+    <span class="rolebadge">Finals</span>
+  </div>
+</header>
+<main id="app"><div class="center">Loading…</div></main>
+<script>
+(function () {
+  var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
+  var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZ25wZHp5d2N4YmZoZHFpcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMjE5MDAsImV4cCI6MjA4NTY5NzkwMH0.RLzcnZNDQBis5z6WPLqTUSeaRJxjOh9p1kk89PDtsCQ";
+  var token = new URLSearchParams(location.search).get("t") || "";
+  var app = document.getElementById("app");
+
+  function rpc(name, args) {
+    return fetch(SUPA + "/rest/v1/rpc/" + name, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": KEY, "Authorization": "Bearer " + KEY },
+      body: JSON.stringify(args)
+    }).then(function (r) {
+      if (!r.ok) { return r.text().then(function (t) { throw new Error(t || r.status); }); }
+      var ct = r.headers.get("content-type") || "";
+      return ct.indexOf("json") >= 0 ? r.json() : null;
+    });
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fileUrl(path, filename) {
+    return SUPA + "/storage/v1/object/public/proofing/" + path +
+      "?download=" + encodeURIComponent(filename);
+  }
+  function thumbUrl(path) {
+    return SUPA + "/storage/v1/object/public/proofing/" + path;
+  }
+  function fmtMB(bytes) { return bytes ? (bytes / 1048576).toFixed(1) + " MB" : ""; }
+  function fmtMP(w, h) { return w && h ? Math.round(w * h / 1e6) + " MP · " + w + "×" + h : ""; }
+
+  function render(d) {
+    document.getElementById("title").textContent = (d.title || "Finals").replace(/Proofs$/i, "Finals");
+    var finals = d.finals || [];
+    if (!finals.length) {
+      app.innerHTML = '<div class="center">No finished edits here yet — they appear as they’re ready.</div>';
+      return;
+    }
+    app.innerHTML =
+      '<p class="intro">Your finished edits, full resolution — these are the print-grade files. ' +
+      'Tap Download and keep the original file for printing.</p>' +
+      finals.map(function (f) {
+        var sub = [fmtMP(f.width, f.height), fmtMB(f.size_bytes)].filter(Boolean).join(" · ");
+        var stars = f.rating ? '<span class="r">' + "★".repeat(f.rating) + "</span> · " : "";
+        return '<section class="fcard">' +
+          (f.thumb_path ? '<img class="fthumb" src="' + esc(thumbUrl(f.thumb_path)) + '" alt="" loading="lazy">' : "") +
+          '<div class="fmeta"><div class="fname">' + esc(f.filename) + '</div>' +
+          '<div class="fsub">' + stars + esc(sub) + '</div></div>' +
+          '<a class="dl" href="' + esc(fileUrl(f.path, f.filename)) + '">Download full res</a>' +
+          '</section>';
+      }).join("");
+  }
+
+  if (!token) {
+    app.innerHTML = '<div class="center">Missing token. Open the link you were sent (it ends in <code>?t=…</code>).</div>';
+    return;
+  }
+  rpc("proof_finals_list", { p_token: token })
+    .then(render)
+    .catch(function (err) {
+      app.innerHTML = '<div class="center">' +
+        (String(err.message).indexOf("invalid token") >= 0
+          ? "This link isn’t valid. Check the link you were sent."
+          : "Could not load finals. " + esc(err.message)) + '</div>';
+    });
+})();
+</script>
+</body>
+</html>
