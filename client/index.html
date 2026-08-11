@@ -57,6 +57,8 @@
   .chip:hover { color: var(--text); border-color: #4a4a4a; }
   .chip.on { color: #111; background: var(--text); border-color: var(--text); font-weight: 600; }
   .chip.warn { border-color: var(--fav); color: var(--fav); }
+  a.chip.finals { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+  a.chip.finals:hover { background: var(--accent); color: #FCFCFA; }
   .spacer { flex: 1; }
   .savestate { font-size: 12px; color: var(--dim); min-width: 60px; text-align: right; }
   .savestate.err { color: var(--fav); }
@@ -335,6 +337,7 @@
     });
     h += "<span class='spacer'></span>";
     h += "<button class='chip' id='dlall'>⬇ Download all</button>";
+    if (S.finalsCount) h += "<a class='chip finals' href='finals/?t=" + encodeURIComponent(token) + "'>✦ Finals (" + S.finalsCount + ")</a>";
     h += "<button class='chip " + (S.compareMode ? "on" : "") + "' id='cmpmode'>" + (S.compareMode ? "✕ Exit compare" : "⇄ Compare similar shots") + "</button>";
     if (S.compareMode && S.sel.length >= 2) h += "<button class='chip warn' id='cmpgo'>View side by side (" + S.sel.length + ")</button>";
     h += "<span class='savestate' id='savestate'></span>";
@@ -647,6 +650,12 @@
       S.images = data.images || [];
       document.title = "SFTL · " + data.gallery.title;
       render();
+      rpc("proof_finals_list", { p_token: token })
+        .then(function (fd) {
+          var n = (fd && fd.finals ? fd.finals.length : 0);
+          if (n) { S.finalsCount = n; render(); }
+        })
+        .catch(function () {});
     })
     .catch(function () {
       app.innerHTML = "<div class='center'>This link isn't valid or has expired.<br>Please check with your photographer.</div>";
