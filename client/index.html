@@ -226,7 +226,8 @@
 <div id="app"><div class="center">Loading gallery…</div></div>
 <div class="toast live-region" id="toast" role="status" aria-live="polite"></div>
 <script src="../assets/js/save-queue.js"></script>
-<script src="../assets/js/ui.js"></script>
+<script src="../assets/js/bounded-download.js"></script>
+<script src="../assets/js/ui.js?v=20260922-2"></script>
 <script>
 (function () {
   var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
@@ -278,12 +279,12 @@
     entries.forEach(function (e) {
       var nm = enc.encode(e.name), sz = e.data.length, crc = crc32(e.data);
       var lh = new DataView(new ArrayBuffer(30));
-      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true);
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x800, true);
       lh.setUint32(14, crc, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true);
       lh.setUint16(26, nm.length, true);
       parts.push(new Uint8Array(lh.buffer), nm, e.data);
       var cd = new DataView(new ArrayBuffer(46));
-      cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+      cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true); cd.setUint16(8, 0x800, true);
       cd.setUint32(16, crc, true); cd.setUint32(20, sz, true); cd.setUint32(24, sz, true);
       cd.setUint16(28, nm.length, true); cd.setUint32(42, offset, true);
       central.push(new Uint8Array(cd.buffer), nm);
@@ -363,8 +364,12 @@
   });
   window.addEventListener('online', function () { saves.retry(); });
   function setRating(img, n) {
+    if (S.workflowBusy || (!isAdmin() && (S.data.gallery.album_mode === "delivery" || S.data.gallery.stage && S.data.gallery.stage !== "review"))) return;
+    var oldStage = S.data.gallery.stage;
+    S.data.gallery.stage = "review";
     img.rating = (img.rating === n) ? null : n;
     pushFeedback(img); refreshImageUI(img);
+    if (oldStage && oldStage !== "review") { var panel = document.getElementById("workflow-panel"); if (panel) { panel.outerHTML = workflowHtml(); bindWorkflow(); } }
   }
   function addComment(img, body, done) {
     rpc("proof_add_comment", { p_token: token, p_image_id: img.id, p_body: body })
@@ -383,7 +388,7 @@
   function starsHtml(img, cls) {
     var h = '<span class="stars ' + (cls || "") + '" data-img="' + img.id + '">';
     for (var n = 1; n <= 5; n++) {
-      h += '<button data-star="' + n + '" aria-label="Rate ' + esc(img.filename) + ' ' + n + ' out of 5" aria-pressed="' + (img.rating === n) + '" class="' + ((img.rating || 0) >= n ? "lit" : "") + '">' + ((img.rating || 0) >= n ? "★" : "☆") + "</button>";
+      h += '<button ' + ((!isAdmin() && (S.data.gallery.album_mode === 'delivery' || S.data.gallery.stage && S.data.gallery.stage !== 'review')) ? 'disabled ' : '') + 'data-star="' + n + '" aria-label="Rate ' + esc(img.filename) + ' ' + n + ' out of 5" aria-pressed="' + (img.rating === n) + '" class="' + ((img.rating || 0) >= n ? "lit" : "") + '">' + ((img.rating || 0) >= n ? "★" : "☆") + "</button>";
     }
     return h + "</span>";
   }
@@ -423,7 +428,7 @@
     h += "<p class='rating-legend'>★4–5 = edit this · ★3 = maybe · ★1–2 = skip</p>" + saveNotice();
     h += "</header>";
 
-    h += "<main>";
+    h += "<main>" + workflowHtml();
     if (isAdmin()) h += adminHtml();
     else if (S.showHelp) h += introHtml();
     if (!list.length) {
@@ -449,12 +454,66 @@
     updateProgress();
     bind();
     paintSaveState();
+    bindWorkflow();
     var restored = focusId ? document.getElementById(focusId) : focusOpen ? document.querySelector('[data-open="' + focusOpen + '"]') : focusFilter ? document.querySelector('[data-filter="' + focusFilter + '"]') : null;
     if (!restored && (focusOpen || focusFilter)) restored = document.querySelector("[data-filter].on");
     if (restored) restored.focus();
   }
 
+  function bindWorkflow() {
+    document.querySelectorAll("[data-stage]").forEach(function (button) { button.onclick = function () { changeStage(button.dataset.stage); }; });
+  }
+  function workflowHtml() {
+    var stage = S.data.gallery.stage;
+    if (!stage) return ""; // Previous backend remains usable during rollback.
+    var selected = S.images.filter(function (i) { return i.rating >= 4; }).length;
+    var names = { review: "Choose your photographs", submitted: "Selection submitted", editing: "Your photographs are being edited", delivered: "Your finished photographs are ready" };
+    var message = stage === "review" ? '<span id="selected-count">' + selected + '</span> selected for editing. Choose 4 or 5 stars, then submit when you are ready. You do not need to rate every photograph.' :
+      stage === "submitted" ? "Your selection is saved for Daniel. Reopen it if you need to change your choices." :
+      stage === "editing" ? "Daniel has started editing your selection. Reopening it will mark the album for review again." :
+      "Open Finished photos to view and download the edited images.";
+    var h = '<section class="intro" id="workflow-panel" aria-label="Album progress"><div class="body"><h2>' + names[stage] + '</h2><p>' + message + '</p></div>';
+    if (stage === "review" && (isAdmin() || S.data.gallery.album_mode !== "delivery")) h += '<button class="chip" data-stage="submitted">Submit selection</button>';
+    if (stage === "submitted" || stage === "editing" || (stage === "delivered" && isAdmin())) h += '<button class="chip" data-stage="review">Reopen selection</button>';
+    if (isAdmin() && stage === "submitted") h += '<button class="chip" data-stage="editing">Start editing</button>';
+    if (isAdmin() && stage !== "delivered" && S.finalsCount) h += '<button class="chip" data-stage="delivered">Mark delivered</button>';
+    if (S.finalsCount) h += '<a class="chip" href="finals/?t=' + encodeURIComponent(token) + '">Finished photos (' + S.finalsCount + ')</a>';
+    return h + '<p id="workflow-message" tabindex="-1" role="status" aria-live="polite"></p></section>';
+  }
+  async function changeStage(stage) {
+    if (S.workflowBusy) return;
+    S.workflowBusy = true;
+    var message = document.getElementById("workflow-message");
+    document.querySelectorAll("[data-stage]").forEach(function (b) { b.disabled = true; });
+    try {
+      message.textContent = "Checking your saved selection…";
+      await saves.settled();
+      var fresh = await rpc("proof_get_gallery", { p_token: token });
+      var same = fresh.images.length === S.images.length && fresh.images.every(function (img) { var local = byId(img.id); return local && (local.rating || null) === (img.rating || null); });
+      if (!same || fresh.gallery.stage !== S.data.gallery.stage) {
+        message.textContent = "This album changed in another window. Reload to see the latest selection before continuing.";
+        return;
+      }
+      var count = fresh.images.filter(function (i) { return i.rating >= 4; }).length;
+      if (stage === "submitted" && !count) { message.textContent = "Choose at least one photograph with 4 or 5 stars first."; return; }
+      var question = stage === "submitted" ? "Submit " + count + " selected photograph" + (count === 1 ? "" : "s") + " for editing?" : stage === "review" ? "Reopen this selection? Daniel will see that the album needs review again." : stage === "editing" ? "Mark this selection as being edited?" : "Mark the finished photographs as delivered? This does not send a message to the client.";
+      if (!await SFTLDialog.confirm(question)) { message.textContent = "No change made."; return; }
+      var result = await rpc("proof_set_album_stage", { p_token: token, p_gallery_id: fresh.gallery.id, p_stage: stage, p_expected_version: fresh.gallery.workflow_version });
+      Object.assign(S.data.gallery, result);
+      render();
+      document.getElementById("workflow-message").focus();
+      document.getElementById("workflow-message").textContent = stage === "submitted" ? "Selection submitted. Daniel can see it in the album dashboard." : "Album updated.";
+    } catch (error) {
+      message.textContent = saves.snapshot().unsaved ? "Save or retry your unsaved choices before submitting." : "The album could not be updated. Check your connection and try again; if the album changed elsewhere, reload first.";
+    } finally {
+      S.workflowBusy = false;
+      document.querySelectorAll("[data-stage]").forEach(function (b) { b.disabled = false; });
+    }
+  }
+
   function updateProgress() {
+    var selected = document.getElementById("selected-count");
+    if (selected) selected.textContent = S.images.filter(function (i) { return i.rating >= 4; }).length;
     var total = S.images.length, done = ratedCount();
     var f = document.getElementById("pfill"), c = document.getElementById("pcount");
     if (f) f.style.width = (total ? Math.round(done / total * 100) : 0) + "%";
@@ -657,24 +716,30 @@
       };
     });
     var da = document.getElementById("dlall");
-    if (da) da.onclick = function () {
-      if (da.disabled) return;
-      da.disabled = true;
-      var imgs = S.images, files = [], failed = 0, chain = Promise.resolve();
-      imgs.forEach(function (img, ix) {
-        chain = chain.then(function () {
-          da.textContent = "⬇ Preparing… " + (ix + 1) + "/" + imgs.length;
-          return fetch(imgUrl(img.preview_path))
-            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-            .then(function (buf) { files.push({ name: img.filename, data: new Uint8Array(buf) }); })
-            .catch(function () { failed++; });
-        });
-      });
-      chain.then(function () {
-        if (files.length) saveBlob(makeZip(files), (S.data.gallery.slug || "gallery") + "-photos.zip");
-        da.textContent = "Download web photos"; da.disabled = false;
-        toast(failed ? failed + " photo(s) failed to download — try again." : "Zip of " + files.length + " photos saved. Web-quality JPEGs — ask about print-quality files.", 3500);
-      });
+    if (da) da.onclick = async function () {
+      if (S.downloading) return;
+      if (S.images.length > 200) { toast("This album is too large for a web ZIP. Open photographs to download them individually.", 6000); return; }
+      S.downloading = true; da.disabled = true;
+      var files = [], total = 0;
+      try {
+        for (var ix = 0; ix < S.images.length; ix++) {
+          var img = S.images[ix], controller = new AbortController();
+          var timeout = setTimeout(function () { controller.abort(); }, 30000);
+          da.textContent = "Preparing " + (ix + 1) + "/" + S.images.length;
+          try {
+            var response = await fetch(imgUrl(img.preview_path), {signal:controller.signal});
+            var blob = await SFTLReadLimited(response, Math.min(8 * 1048576, 32 * 1048576 - total));
+            total += blob.size;
+            files.push({name:img.filename.replace(/[\\/]/g, '_'), data:new Uint8Array(await blob.arrayBuffer())});
+          } finally { clearTimeout(timeout); }
+        }
+        if (files.length) { saveBlob(makeZip(files), (S.data.gallery.slug || "gallery") + "-web-photos.zip"); toast("Web-photo ZIP download started. Check your browser downloads.", 5000); }
+      } catch (error) {
+        toast(/too large|individually/.test(error.message) ? error.message : "The ZIP could not be prepared. Check your connection and retry, or download photographs individually.", 7000);
+      } finally {
+        files = []; S.downloading = false;
+        var button = document.getElementById("dlall"); if (button) { button.textContent = "Download web photos"; button.disabled = false; }
+      }
     };
     var cm = document.getElementById("cmpmode");
     if (cm) cm.onclick = function () { S.compareMode = !S.compareMode; if (!S.compareMode) S.sel = []; render(); };
@@ -734,7 +799,7 @@
     else if (e.key === "ArrowLeft") navLb(-1);
     else if (e.key === "ArrowRight") navLb(1);
     else if (e.key >= "1" && e.key <= "5") setRating(img, parseInt(e.key, 10));
-    else if (e.key === "0") { img.rating = null; pushFeedback(img); refreshImageUI(img); }
+    else if (e.key === "0" && !S.workflowBusy && (isAdmin() || S.data.gallery.album_mode !== "delivery" && (!S.data.gallery.stage || S.data.gallery.stage === "review"))) { S.data.gallery.stage = "review"; img.rating = null; pushFeedback(img); refreshImageUI(img); }
   });
 
   function loadGallery() {
@@ -763,6 +828,9 @@
         });
       } catch (_) { storageAvailable = false; }
       saves.notify();
+      if (!saves.snapshot().unsaved && !isAdmin() && (data.gallery.stage === "delivered" || data.gallery.album_mode === "delivery") && new URLSearchParams(location.search).get("view") !== "review") {
+        location.replace("finals/?t=" + encodeURIComponent(token)); return;
+      }
       render();
     }).catch(function (error) {
       var invalid = error.status === 401 || error.status === 403 || /invalid token/.test(error.message);

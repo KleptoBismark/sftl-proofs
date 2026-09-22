@@ -47,5 +47,24 @@
     else if (event.shiftKey && (document.activeElement === first || document.activeElement === active)) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }, true);
-  window.SFTLDialog = { show: show, hide: hide };
+  function confirmAction(message) {
+    return new Promise(function (resolve) {
+      var dialog = document.createElement('div');
+      dialog.className = 'sftl-confirm';
+      dialog.setAttribute('aria-label', 'Confirm album update');
+      dialog.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:20px';
+      var panel = document.createElement('div');
+      panel.style.cssText = 'max-width:460px;background:#242424;color:#ececec;padding:24px;border:1px solid #777;border-radius:8px;font:16px/1.5 system-ui';
+      var text = document.createElement('p'); text.textContent = message;
+      var cancel = document.createElement('button'), accept = document.createElement('button');
+      cancel.textContent = 'Cancel'; accept.textContent = 'Confirm update';
+      [cancel,accept].forEach(function (button) { button.type = 'button'; button.style.cssText = 'margin:18px 12px 0 0;min-height:44px;padding:8px 14px;border:1px solid #aaa;border-radius:5px;color:inherit;background:#303030;font:inherit;cursor:pointer'; });
+      function finish(value) { hide(dialog); dialog.remove(); resolve(value); }
+      cancel.onclick = function () { finish(false); };
+      accept.onclick = function () { finish(true); };
+      dialog.addEventListener('keydown', function (event) { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); finish(false); } });
+      panel.append(text,cancel,accept); dialog.append(panel); document.body.append(dialog); show(dialog);
+    });
+  }
+  window.SFTLDialog = { show: show, hide: hide, confirm: confirmAction };
 })();

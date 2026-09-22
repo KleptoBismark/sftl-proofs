@@ -40,7 +40,7 @@
   h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
   .rolebadge {
     font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-    border: 1px solid var(--accent); color: var(--accent);
+    border: 1px solid var(--accent); color: #ed8c81;
     border-radius: 99px; padding: 2px 9px;
   }
 
@@ -65,7 +65,7 @@
     font-size: 13px; color: var(--dim); transition: .15s; text-decoration: none;
   }
   .chip:hover { color: var(--text); border-color: #4a4a4a; }
-  .chip.go { border-color: var(--accent); color: var(--accent); }
+  .chip.go { border-color: #ed8c81; color: #ed8c81; }
   .chip.go:hover { background: var(--accent); color: #FCFCFA; }
 
   .toast {
@@ -73,6 +73,14 @@
     background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
     padding: 9px 16px; font-size: 13px; display: none; z-index: 60;
   }
+  :focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  button:disabled { opacity:.55; cursor:wait; }
+  .chip { min-height:44px; display:inline-flex; align-items:center; }
+  .stageform { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px; align-items:end; }
+  .stageform label { display:grid; gap:5px; color:var(--dim); font-size:13px; }
+  select { max-width:100%; background:var(--panel2); color:var(--text); border:1px solid #666; border-radius:5px; font:inherit; padding:10px; }
+  .album-status { margin-top:12px; color:var(--text); }
+  @media(max-width:480px) { header {position:static;} .stageform label {width:100%;} }
 </style>
 </head>
 <body>
@@ -80,11 +88,12 @@
   <a class="brand" href="../../"><img src="../../assets/brand/sftl-mark-small.svg" alt="">STORIES FROM THE LENS</a>
   <div class="hrow">
     <h1>Owner Dashboard</h1>
-    <span class="rolebadge">Owner</span>
+    <span class="rolebadge">Owner</span><button class="chip" onclick="location.reload()">Refresh dashboard</button>
   </div>
 </header>
 <main id="app"><div class="center">Loading galleries…</div></main>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="../../assets/js/ui.js?v=20260922-2"></script>
 <script>
 (function () {
   var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
@@ -94,15 +103,18 @@
   var app = document.getElementById("app");
 
   function rpc(name, args) {
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 20000);
     return fetch(SUPA + "/rest/v1/rpc/" + name, {
+      signal: controller.signal,
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": KEY, "Authorization": "Bearer " + KEY },
       body: JSON.stringify(args)
     }).then(function (r) {
-      if (!r.ok) { return r.text().then(function (t) { throw new Error(t || r.status); }); }
+      if (!r.ok) { return r.text().then(function (t) { var error = new Error(t || r.status); error.status = r.status; throw error; }); }
       var ct = r.headers.get("content-type") || "";
       return ct.indexOf("json") >= 0 ? r.json() : null;
-    });
+    }).finally(function () { clearTimeout(timeout); });
   }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -126,53 +138,69 @@
       " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   }
 
+  var albums = [];
+  var stages = {review:"Reviewing",submitted:"Selection submitted",editing:"Editing",delivered:"Delivered"};
   function render(galleries) {
-    if (!galleries.length) {
-      app.innerHTML = '<div class="center">No galleries yet.</div>';
-      return;
-    }
+    albums = galleries;
+    if (!galleries.length) { app.innerHTML = '<div class="center">No albums yet.</div>'; return; }
     app.innerHTML = galleries.map(function (g, idx) {
+      var stage = g.stage || "review";
       return '<section class="gcard" data-i="' + idx + '">' +
-        '<div class="gtop"><span class="gtitle">' + esc(g.title) + '</span>' +
-        '<span class="gsub">' + esc(g.client_name || "client TBC") +
-        ' · created ' + fmtDate(g.created_at) + '</span></div>' +
+        '<div class="gtop"><h2 class="gtitle">' + esc(g.title) + '</h2><span class="gsub">' + esc(g.client_name || "Client name not set") + '</span></div>' +
+        '<p class="album-status">' + esc(stages[stage]) + (g.album_mode === "delivery" ? ' · Delivery album' : ' · Selection and delivery') + '</p>' +
         '<div class="statrow">' +
-        '<div class="stat"><b>' + g.image_count + '</b><span>Photos</span></div>' +
         '<div class="stat"><b>' + g.rated_count + '/' + g.image_count + '</b><span>Rated</span></div>' +
-        '<div class="stat hot"><b>' + g.edit_count + '</b><span>To edit (★4+)</span></div>' +
-        '<div class="stat"><b>' + (g.avg_rating == null ? "—" : g.avg_rating) + '</b><span>Avg ★</span></div>' +
-        '<div class="stat"><b>' + g.comment_count + '</b><span>Comments</span></div>' +
-        '<div class="stat"><b style="font-size:13px;line-height:1.6">' + fmtDate(g.last_activity) + '</b><span>Last activity</span></div>' +
-        '</div>' +
-        '<div class="linkrow">' +
-        '<a class="chip go" href="' + PORTAL + '?t=' + esc(g.admin_token) + '" target="_blank" rel="noopener">Open as photographer</a>' +
-        '<button class="chip" data-copy="client" data-i="' + idx + '">Copy client link</button>' +
-        '<button class="chip" data-copy="admin" data-i="' + idx + '">Copy photographer link</button>' +
-        '</div></section>';
+        '<div class="stat hot"><b>' + g.edit_count + '</b><span>Selected ★4+</span></div>' +
+        '<div class="stat"><b>' + (g.finals_count || 0) + '</b><span>Finished photos</span></div>' +
+        '<div class="stat"><b>' + (g.remaining_count == null ? "—" : g.remaining_count) + '</b><span>Selected without finals</span></div>' +
+        '<div class="stat"><b>' + g.comment_count + '</b><span>Comments</span></div></div>' +
+        '<p class="gsub">Last activity: ' + fmtDate(g.last_activity) + (g.submitted_at ? ' · Submitted: ' + fmtDate(g.submitted_at) : '') + '</p>' +
+        '<div class="linkrow"><a class="chip go" href="' + PORTAL + '?t=' + esc(g.admin_token) + '" target="_blank" rel="noopener noreferrer">Open as photographer</a>' +
+        '<button class="chip" data-copy="client" data-i="' + idx + '">Copy client album link</button>' +
+        (g.finals_count ? '<button class="chip" data-copy="finals" data-i="' + idx + '">Copy finished-photo link</button><a class="chip" href="' + PORTAL + 'finals/?t=' + esc(g.admin_token) + '">View finished photos</a>' : '') +
+        '<button class="chip" data-copy="admin" data-i="' + idx + '">Copy photographer link</button></div>' +
+        (g.workflow_version == null ? '' : '<div class="stageform" data-i="' + idx + '"><label>Album stage<select name="stage">' + Object.keys(stages).map(function (v) {return '<option value="' + v + '"' + (v===stage?' selected':'') + '>' + stages[v] + '</option>';}).join('') +
+        '</select></label><label>Client experience<select name="mode"><option value="proofing"' + (g.album_mode!=="delivery"?' selected':'') + '>Choose, then receive photos</option><option value="delivery"' + (g.album_mode==="delivery"?' selected':'') + '>Finished photos only</option></select></label><button class="chip" type="button" data-update>Update album</button></div>') +
+        '<p class="gsub">The client album link stays the same at every stage. Updating this dashboard does not send a client message.</p>' +
+        '<p class="update-message" role="status" aria-live="polite"></p></section>';
     }).join("");
-    app.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-copy]");
-      if (!b) return;
-      var g = galleries[+b.getAttribute("data-i")];
-      if (b.getAttribute("data-copy") === "client") {
-        copy(PORTAL + "?t=" + g.share_token, "Client link");
-      } else {
-        copy(PORTAL + "?t=" + g.admin_token, "Photographer link");
-      }
-    });
+  }
+  app.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-copy]");
+    if (!b) return;
+    var g = albums[+b.dataset.i], type = b.dataset.copy;
+    copy(PORTAL + (type === "finals" ? 'finals/' : '') + '?t=' + (type === "admin" ? g.admin_token : g.share_token), type === "admin" ? "Photographer link" : type === "finals" ? "Finished-photo link" : "Client album link");
+  });
+  app.addEventListener("click", async function (e) {
+    var trigger = e.target.closest("[data-update]");
+    if (!trigger || trigger.disabled) return;
+    var form = trigger.closest(".stageform"), g = albums[+form.dataset.i], button = form.querySelector('button'), message = form.parentElement.querySelector('.update-message');
+    var stage = form.querySelector('[name="stage"]').value, mode = form.querySelector('[name="mode"]').value;
+    if (stage === g.stage && mode === g.album_mode) { message.textContent = "No changes to save."; return; }
+    if (!await SFTLDialog.confirm('Update “' + g.title + '” to ' + stages[stage] + (mode==='delivery' ? ', showing finished photos only' : ', with selection and delivery') + '? Existing client links will stay valid.')) return;
+    button.disabled = true; message.textContent = "Updating album…";
+    try {
+      await rpc("proof_set_album_stage", {p_token:token,p_gallery_id:g.id,p_stage:stage,p_expected_version:g.workflow_version,p_mode:mode});
+      await load(); toast("Album updated. Existing links remain valid.");
+    } catch (error) {
+      message.textContent = /40001/.test(error.message) ? "The album changed elsewhere. Refresh the dashboard before updating it." : /submit the selection/.test(error.message) ? "Submit the client's selection before starting editing." : /choose at least/.test(error.message) ? "Choose at least one photo with 4 or 5 stars before submitting." : /add finished/.test(error.message) ? "Add finished photos before marking this album delivered." : "The update could not be confirmed. Refresh to check its status before retrying.";
+    } finally { button.disabled = false; }
+  });
+  async function load() {
+    var d = await rpc("proof_owner_overview", {p_token:token});
+    render(d.galleries || []);
   }
 
   if (!token) {
     app.innerHTML = '<div class="center">Missing token. Open your owner link with <code>?t=…</code></div>';
     return;
   }
-  rpc("proof_owner_overview", { p_token: token })
-    .then(function (d) { render(d.galleries || []); })
+  load()
     .catch(function (err) {
       app.innerHTML = '<div class="center">' +
         (String(err.message).indexOf("42501") >= 0 || String(err.message).indexOf("invalid token") >= 0
           ? "Invalid owner token."
-          : "Could not load galleries. " + esc(err.message)) + '</div>';
+          : "Could not load your albums. Check your connection and try again.") + '<p><button class="chip" onclick="location.reload()">Refresh dashboard</button></p></div>';
     });
 })();
 </script>

@@ -40,7 +40,7 @@
   h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
   .rolebadge {
     font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-    border: 1px solid var(--accent); color: var(--accent);
+    border: 1px solid var(--accent); color: #ed8c81;
     border-radius: 99px; padding: 2px 9px;
   }
 
@@ -65,7 +65,7 @@
   .fsub { color: var(--dim); font-size: 12.5px; }
   .fsub .r { color: var(--star); }
   .dl {
-    flex: none; border: 1px solid var(--accent); color: var(--accent);
+    flex: none; border: 1px solid var(--accent); color: #ed8c81;
     border-radius: 99px; padding: 7px 15px; font-size: 13px;
     text-decoration: none; transition: .15s; white-space: nowrap;
   }
@@ -75,6 +75,26 @@
     .fcard { flex-wrap: wrap; }
     .dl { width: 100%; text-align: center; }
   }
+  main {max-width:1200px;}
+  :focus-visible {outline:2px solid white;outline-offset:3px;}
+  .finalgrid {display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;}
+  .fcard {display:flex;flex-direction:column;align-items:stretch;padding:0;overflow:hidden;margin:0;}
+  .photo-open {width:100%;aspect-ratio:4/3;background:var(--panel2);display:flex;align-items:center;justify-content:center;}
+  .fthumb {width:100%;height:100%;object-fit:contain;border-radius:0;}
+  .fmeta {padding:14px;}
+  .downloads {display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .dl {min-height:44px;display:inline-flex;align-items:center;justify-content:center;white-space:normal;}
+  .albumnav {display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;}
+  .viewer {display:none;position:fixed;inset:0;z-index:50;background:rgba(10,10,10,.98);padding:16px;}
+  .viewer.open {display:flex;flex-direction:column;}
+  .viewer-top {display:flex;justify-content:space-between;gap:10px;align-items:center;}
+  .viewer-title {overflow-wrap:anywhere;font-size:15px;}
+  .viewer-image {flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;}
+  .viewer-image img {width:100%;height:100%;object-fit:contain;}
+  .viewer-controls {display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+  .viewer button {min-height:44px;padding:10px 16px;border:1px solid #666;border-radius:5px;}
+  .viewer-status {color:var(--dim);text-align:center;margin:8px;}
+  @media(max-width:480px) {header {position:static;} .finalgrid {grid-template-columns:1fr;} .viewer {padding:10px;} }
 </style>
 </head>
 <body>
@@ -82,10 +102,17 @@
   <a class="brand" href="../../"><img src="../../assets/brand/sftl-mark-small.svg" alt="">STORIES FROM THE LENS</a>
   <div class="hrow">
     <h1 id="title">Finals</h1>
-    <span class="rolebadge">Finals</span>
+    <span class="rolebadge">Finished photos</span>
   </div>
 </header>
-<main id="app"><div class="center">Loading…</div></main>
+<main id="app"><div class="center" role="status">Loading finished photos…</div></main>
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Finished photograph viewer">
+  <div class="viewer-top"><h2 class="viewer-title" id="viewer-title"></h2><button id="viewer-close" aria-label="Close photograph">Close</button></div>
+  <div class="viewer-image"><img id="viewer-img" alt=""></div>
+  <p class="viewer-status" id="viewer-status" role="status" aria-live="polite"></p>
+  <div class="viewer-controls"><button id="viewer-prev" aria-label="Previous photograph">← Previous</button><a class="dl" id="viewer-download">Download full resolution</a><button id="viewer-next" aria-label="Next photograph">Next →</button></div>
+</div>
+<script src="../../assets/js/ui.js?v=20260922-2"></script>
 <script>
 (function () {
   var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
@@ -94,65 +121,92 @@
   var app = document.getElementById("app");
 
   function rpc(name, args) {
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 20000);
     return fetch(SUPA + "/rest/v1/rpc/" + name, {
+      signal: controller.signal,
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": KEY, "Authorization": "Bearer " + KEY },
       body: JSON.stringify(args)
     }).then(function (r) {
-      if (!r.ok) { return r.text().then(function (t) { throw new Error(t || r.status); }); }
+      if (!r.ok) { return r.text().then(function (t) { var error = new Error(t || r.status); error.status = r.status; throw error; }); }
       var ct = r.headers.get("content-type") || "";
       return ct.indexOf("json") >= 0 ? r.json() : null;
-    });
+    }).finally(function () { clearTimeout(timeout); });
   }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  function fileUrl(path, filename) {
-    return SUPA + "/storage/v1/object/public/proofing/" + path +
-      "?download=" + encodeURIComponent(filename);
-  }
   function thumbUrl(path) {
-    return SUPA + "/storage/v1/object/public/proofing/" + path;
+    return SUPA + "/storage/v1/object/public/proofing/" + String(path).split("/").map(encodeURIComponent).join("/");
   }
-  function fmtMB(bytes) { return bytes ? (bytes / 1048576).toFixed(1) + " MB" : ""; }
-  function fmtMP(w, h) { return w && h ? Math.round(w * h / 1e6) + " MP · " + w + "×" + h : ""; }
-
+  function fileUrl(path, filename) { return thumbUrl(path) + "?download=" + encodeURIComponent(filename); }
+  function fmtMB(bytes) { return bytes ? (bytes / 1048576).toFixed(1) + " MB" : "Size unavailable"; }
+  function fmtMP(w, h) { return w && h ? w + " × " + h : ""; }
+  var photos = [], current = -1;
+  var viewer = document.getElementById("viewer");
+  function closeViewer() { SFTLDialog.hide(viewer); current = -1; }
+  function showPhoto(index) {
+    current = (index + photos.length) % photos.length;
+    var f = photos[current], image = document.getElementById("viewer-img"), status = document.getElementById("viewer-status");
+    document.getElementById("viewer-title").textContent = f.filename;
+    var path = f.preview_path || f.path, url = thumbUrl(path);
+    image.alt = f.filename;
+    status.textContent = "Loading photograph…" + (f.preview_path ? "" : " " + fmtMB(f.size_bytes));
+    image.onload = function () { if (image.src === url) status.textContent = (current + 1) + " of " + photos.length + (f.preview_path ? " · Web preview" : " · Full-resolution image"); };
+    image.onerror = function () { if (image.src === url) status.textContent = "The photo could not load. Check your connection; close and open it again to retry."; };
+    image.src = url;
+    document.getElementById("viewer-download").href = fileUrl(f.path, f.filename);
+    document.getElementById("viewer-prev").disabled = photos.length < 2;
+    document.getElementById("viewer-next").disabled = photos.length < 2;
+    SFTLDialog.show(viewer, document.getElementById("viewer-close"));
+  }
+  document.getElementById("viewer-close").onclick = closeViewer;
+  document.getElementById("viewer-prev").onclick = function () { showPhoto(current - 1); };
+  document.getElementById("viewer-next").onclick = function () { showPhoto(current + 1); };
+  document.addEventListener("keydown", function (event) {
+    if (current < 0) return;
+    if (event.key === "Escape") { event.preventDefault(); closeViewer(); }
+    if (event.key === "ArrowLeft") { event.preventDefault(); showPhoto(current - 1); }
+    if (event.key === "ArrowRight") { event.preventDefault(); showPhoto(current + 1); }
+  });
+  app.addEventListener("click", function (event) { var button = event.target.closest('[data-photo]'); if (button) showPhoto(+button.dataset.photo); });
   function render(d) {
-    document.getElementById("title").textContent = (d.title || "Finals").replace(/Proofs$/i, "Finals");
-    var finals = d.finals || [];
-    if (!finals.length) {
-      app.innerHTML = '<div class="center">No finished edits here yet — they appear as they’re ready.</div>';
-      return;
-    }
-    app.innerHTML =
-      '<p class="intro">Your finished edits, full resolution — these are the print-grade files. ' +
-      'Tap Download and keep the original file for printing.</p>' +
-      finals.map(function (f) {
-        var sub = [fmtMP(f.width, f.height), fmtMB(f.size_bytes)].filter(Boolean).join(" · ");
-        var stars = f.rating ? '<span class="r">' + "★".repeat(f.rating) + "</span> · " : "";
-        return '<section class="fcard">' +
-          (f.thumb_path ? '<img class="fthumb" src="' + esc(thumbUrl(f.thumb_path)) + '" alt="" loading="lazy">' : "") +
-          '<div class="fmeta"><div class="fname">' + esc(f.filename) + '</div>' +
-          '<div class="fsub">' + stars + esc(sub) + '</div></div>' +
-          '<a class="dl" href="' + esc(fileUrl(f.path, f.filename)) + '">Download full res</a>' +
-          '</section>';
-      }).join("");
+    document.getElementById("title").textContent = d.title || "Your finished photos";
+    document.title = "SFTL · " + (d.title || "Finished photos");
+    photos = d.finals || [];
+    var back = '<nav class="albumnav" aria-label="Album navigation">' +
+      ((d.album_mode !== "delivery" || d.role === "admin") ? '<a class="dl" href="../?t=' + encodeURIComponent(token) + '&amp;view=review">' + (d.stage === "delivered" ? "View selection" : "Back to selection") + '</a>' : '') +
+      '<a class="dl" href="mailto:daniel@storiesfromthelens.com?subject=My%20finished%20photos">Contact Daniel</a></nav>';
+    if (!photos.length) { app.innerHTML = back + '<div class="center">Your finished photographs will appear here when they are ready. Your album link will stay the same.</div>'; return; }
+    var total = photos.reduce(function (sum, f) { return sum + (f.size_bytes || 0); }, 0);
+    app.innerHTML = back + '<p class="intro">' + photos.length + ' finished photograph' + (photos.length === 1 ? '' : 's') + (total ? ' · Full-resolution files total ' + fmtMB(total) : '') + '. Open a photo to view it. Download full resolution for your archive or printing, or a web copy for sharing when available. Downloads are individual files, so you can save them one at a time on mobile.</p>' +
+      '<div class="finalgrid">' + photos.map(function (f, index) {
+        var preview = f.final_thumb_path || f.preview_path;
+        return '<section class="fcard"><button class="photo-open" data-photo="' + index + '" aria-label="View finished photo: ' + esc(f.filename) + '">' +
+          (preview ? '<img class="fthumb" src="' + esc(thumbUrl(preview)) + '" alt="" loading="lazy">' : '<span>View finished photograph<br>' + esc(fmtMB(f.size_bytes)) + '</span>') + '</button>' +
+          '<div class="fmeta"><h2 class="fname">' + esc(f.filename) + '</h2><p class="fsub">' + esc([fmtMP(f.width,f.height),fmtMB(f.size_bytes)].filter(Boolean).join(' · ')) + '</p><div class="downloads">' +
+          '<a class="dl" aria-label="Download full resolution: ' + esc(f.filename) + '" href="' + esc(fileUrl(f.path,f.filename)) + '">Full resolution</a>' +
+          (f.preview_path ? '<a class="dl" aria-label="Download web copy: ' + esc(f.filename) + '" href="' + esc(fileUrl(f.preview_path,f.filename.replace(/\.[^.]+$/, '') + '-web.jpg')) + '">Web copy</a>' : '') + '</div></div></section>';
+      }).join('') + '</div>';
+  }
+  function load() {
+    app.innerHTML = '<div class="center" role="status">Loading finished photos…</div>';
+    rpc("proof_finals_list", {p_token:token}).then(render).catch(function (err) {
+      var invalid = err.status === 401 || err.status === 403 || /invalid token/.test(err.message);
+      app.innerHTML = '<div class="center"><h2>' + (invalid ? 'This album link is not valid' : 'Your finished photos could not load') + '</h2><p>' +
+        (invalid ? 'Use the full link Daniel sent you, or ask for it again.' : 'Check your connection and try again.') + '</p><button class="dl" id="retry-finals">Try again</button><p><a href="mailto:daniel@storiesfromthelens.com">Contact Daniel</a></p></div>';
+      document.getElementById('retry-finals').onclick = load;
+    });
   }
 
   if (!token) {
     app.innerHTML = '<div class="center">Missing token. Open the link you were sent (it ends in <code>?t=…</code>).</div>';
     return;
   }
-  rpc("proof_finals_list", { p_token: token })
-    .then(render)
-    .catch(function (err) {
-      app.innerHTML = '<div class="center">' +
-        (String(err.message).indexOf("invalid token") >= 0
-          ? "This link isn’t valid. Check the link you were sent."
-          : "Could not load finals. " + esc(err.message)) + '</div>';
-    });
+  load();
 })();
 </script>
 </body>
