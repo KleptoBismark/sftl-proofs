@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
 <title>Stories From The Lens — Proof Gallery</title>
 <link rel="icon" type="image/svg+xml" href="../assets/brand/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicon-32.png">
@@ -186,31 +187,69 @@
   }
   .center { display: flex; align-items: center; justify-content: center; min-height: 70vh; color: var(--dim); text-align: center; padding: 20px; }
   .empty { color: var(--dim); text-align: center; padding: 60px 0; }
+
+  button:focus-visible, a:focus-visible, textarea:focus-visible { outline: 3px solid #ececec; outline-offset: 3px; }
+  button[hidden] { display: none; }
+  .card .imgwrap { display: block; width: 100%; }
+  .stars { gap: 2px; }
+  .stars button { min-width: 28px; min-height: 32px; color: #aaa; }
+  .cardrow { flex-wrap: wrap; gap: 3px; }
+  .cardmeta { padding: 8px 6px; }
+  .chip { min-height: 36px; }
+  .hint { color: #aaa; }
+  .rating-legend { color: #bcbcbc; font-size: 12px; margin-top: 8px; }
+  .save-notice { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ccc; }
+  .save-notice.err, .unsaved { color: #ffb5ad; }
+  .unsaved { font-size: 12px; }
+  .lb > .save-notice, .cmp > .save-notice { padding: 0 16px 6px; }
+  a.chip.finals { color: #ffaaa0; }
+  .cmphelp { color: #ffaaa0; }
+  .entry-help { max-width: 620px; padding: 64px 24px; }
+  .entry-help h1 { font-size: 26px; margin-bottom: 20px; }
+  .entry-help p { margin: 20px 0; color: #bbb; }
+  .entry-help a { color: #ececec; }
+  @media (max-width: 560px) {
+    header { position: static; padding: 12px; }
+    main { padding: 12px; }
+    .toolbar { gap: 6px; }
+    .chip { padding: 7px 10px; }
+    .brand { letter-spacing: .18em; }
+    .cmppanes { gap: 6px; padding: 0 6px 6px; }
+    .cmpmeta { padding: 7px 5px; gap: 3px; }
+    .cmpmeta .stars button { min-width: 25px; }
+    .cmpmeta .rm { min-height: 32px; }
+  }
+@media (max-width: 360px) { .grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <div id="app"><div class="center">Loading gallery…</div></div>
-<div class="toast" id="toast"></div>
+<div class="toast live-region" id="toast" role="status" aria-live="polite"></div>
+<script src="../assets/js/save-queue.js"></script>
+<script src="../assets/js/ui.js"></script>
 <script>
 (function () {
   var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZ25wZHp5d2N4YmZoZHFpcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMjE5MDAsImV4cCI6MjA4NTY5NzkwMH0.RLzcnZNDQBis5z6WPLqTUSeaRJxjOh9p1kk89PDtsCQ";
   var token = new URLSearchParams(location.search).get("t") || "";
-  var S = { data: null, images: [], filter: "all", compareMode: false, sel: [], lbIndex: -1, pending: 0 };
+  var S = { data: null, images: [], filter: "all", compareMode: false, sel: [], lbIndex: -1, pending: 0, commentDrafts: {} };
   var app = document.getElementById("app");
 
   function rpc(name, args) {
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 20000);
     return fetch(SUPA + "/rest/v1/rpc/" + name, {
+      signal: controller.signal,
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": KEY, "Authorization": "Bearer " + KEY },
       body: JSON.stringify(args)
     }).then(function (r) {
-      if (!r.ok) { return r.text().then(function (t) { throw new Error(t || r.status); }); }
+      if (!r.ok) { return r.text().then(function (t) { var error = new Error(t || r.status); error.status = r.status; throw error; }); }
       var ct = r.headers.get("content-type") || "";
       return ct.indexOf("json") >= 0 ? r.json() : null;
-    });
+    }).finally(function () { clearTimeout(timeout); });
   }
-  function imgUrl(path) { return SUPA + "/storage/v1/object/public/proofing/" + path; }
+  function imgUrl(path) { return SUPA + "/storage/v1/object/public/proofing/" + String(path).split("/").map(encodeURIComponent).join("/"); }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -221,10 +260,7 @@
     t.textContent = msg; t.style.display = "block";
     clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, ms || 2200);
   }
-  function saveState(txt, err) {
-    var el = document.getElementById("savestate");
-    if (el) { el.textContent = txt; el.className = "savestate" + (err ? " err" : ""); }
-  }
+
 
   var CRC_T = (function () {
     var t = [], c, k, n;
@@ -275,25 +311,57 @@
 
   function isAdmin() { return S.data && S.data.role === "admin"; }
   function ratedCount() {
-    return S.images.filter(function (i) { return i.rating || i.comments.length; }).length;
+    return S.images.filter(function (i) { return !!i.rating; }).length;
   }
   function filtered() {
     var f = S.filter;
     return S.images.filter(function (i) {
       if (f === "all") return true;
-      if (f === "unrated") return !i.rating && !i.comments.length;
+      if (f === "unrated") return !i.rating;
       if (f === "commented") return i.comments.length > 0;
       if (f === "top") return (i.rating || 0) >= 4;
       return true;
     });
   }
 
-  function pushFeedback(img) {
-    S.pending++; saveState("Saving…");
-    rpc("proof_set_feedback", { p_token: token, p_image_id: img.id, p_rating: img.rating || null, p_favorite: false })
-      .then(function () { S.pending--; if (!S.pending) saveState("Saved ✓"); })
-      .catch(function () { S.pending--; saveState("Save failed", true); toast("Couldn't save — check your connection and try again."); });
+  var savedOnce = false;
+  var draftKey = '';
+  var storageAvailable = true;
+  var saves = new SFTLSaveQueue(function (id, rating) {
+    return rpc("proof_set_feedback", { p_token: token, p_image_id: id, p_rating: rating, p_favorite: false });
+  }, function (state) {
+    if (draftKey) {
+      try {
+        if (state.unsaved) localStorage.setItem(draftKey, JSON.stringify(state.items.map(function (item) { return { id: item.id, value: item.value }; })));
+        else localStorage.removeItem(draftKey);
+      } catch (_) { storageAvailable = false; }
+    }
+    paintSaveState();
+  });
+  function paintSaveState() {
+    var state = saves.snapshot();
+    S.pending = state.unsaved;
+    var message = state.failed ? state.failed + " choice(s) not saved. Retry saving." : state.pending ? "Saving choices…" : savedOnce ? "All choices saved ✓" : "";
+    if (state.unsaved && !storageAvailable) message += " Keep this page open until saved.";
+    document.querySelectorAll('.save-text').forEach(function (el) { el.textContent = message; });
+    document.querySelectorAll('.retry-saves').forEach(function (el) { el.hidden = !state.failed; el.onclick = function () { saves.retry(); }; });
+    document.querySelectorAll('.save-notice').forEach(function (el) { el.classList.toggle('err', !!state.failed); });
+    document.querySelectorAll('[data-unsaved]').forEach(function (el) {
+      var item = state.items.find(function (entry) { return entry.id === el.getAttribute('data-unsaved'); });
+      el.textContent = item ? item.error ? "Not saved" : "Saving…" : "";
+    });
   }
+  function saveNotice() {
+    return "<div class='save-notice' role='status' aria-live='polite'><span class='save-text'></span><button class='chip retry-saves' hidden>Retry saving</button></div>";
+  }
+  function pushFeedback(img) {
+    savedOnce = true;
+    saves.set(img.id, img.rating || null);
+  }
+  window.addEventListener('beforeunload', function (event) {
+    if (saves.snapshot().unsaved) { event.preventDefault(); event.returnValue = ''; }
+  });
+  window.addEventListener('online', function () { saves.retry(); });
   function setRating(img, n) {
     img.rating = (img.rating === n) ? null : n;
     pushFeedback(img); refreshImageUI(img);
@@ -315,7 +383,7 @@
   function starsHtml(img, cls) {
     var h = '<span class="stars ' + (cls || "") + '" data-img="' + img.id + '">';
     for (var n = 1; n <= 5; n++) {
-      h += '<button data-star="' + n + '" aria-label="Rate ' + n + '" class="' + ((img.rating || 0) >= n ? "lit" : "") + '">' + ((img.rating || 0) >= n ? "★" : "☆") + "</button>";
+      h += '<button data-star="' + n + '" aria-label="Rate ' + esc(img.filename) + ' ' + n + ' out of 5" aria-pressed="' + (img.rating === n) + '" class="' + ((img.rating || 0) >= n ? "lit" : "") + '">' + ((img.rating || 0) >= n ? "★" : "☆") + "</button>";
     }
     return h + "</span>";
   }
@@ -324,34 +392,40 @@
     var g = S.data.gallery;
     var list = filtered();
     var total = S.images.length;
+    var focus = document.activeElement;
+    var focusId = focus && focus.id;
+    var focusOpen = focus && focus.getAttribute('data-open');
+    var focusFilter = focus && focus.getAttribute('data-filter');
     var h = "";
     h += "<header><a class='brand' href='../'><img src='../assets/brand/sftl-mark-small.svg' alt=''><span>STORIES FROM THE LENS</span></a><div class='hrow'><h1>" + esc(g.title) + "</h1>";
-    h += "<span class='sub'>" + total + " photos · straight out of camera</span>";
+    h += "<span class='sub'>" + total + " photos</span>";
     if (isAdmin()) h += "<span class='rolebadge'>Photographer view</span>";
     h += "</div>";
     h += "<div class='progresswrap'><div class='pbar'><i id='pfill'></i></div><span class='pcount' id='pcount'></span></div>";
     h += "<div class='toolbar'>";
-    var chips = [["all", "All"], ["unrated", "To review"], ["top", "★ 4+"], ["commented", "Commented"]];
+    var chips = [["all", "All"], ["unrated", "Unrated"], ["top", "Selected ★4+"], ["commented", "Commented"]];
     chips.forEach(function (c) {
       h += "<button class='chip " + (S.filter === c[0] ? "on" : "") + "' data-filter='" + c[0] + "'>" + c[1] + "</button>";
     });
     h += "<span class='spacer'></span>";
-    h += "<button class='chip' id='dlall'>⬇ Download all</button>";
+    h += "<button class='chip' id='dlall'>Download web photos</button>";
+    if (S.finalsUnavailable) h += "<a class='chip finals' href='finals/?t=" + encodeURIComponent(token) + "'>Check finished photos</a>";
     if (S.finalsCount) h += "<a class='chip finals' href='finals/?t=" + encodeURIComponent(token) + "'>✦ Finals (" + S.finalsCount + ")</a>";
     h += "<button class='chip " + (S.compareMode ? "on" : "") + "' id='cmpmode'>" + (S.compareMode ? "✕ Exit compare" : "⇄ Compare similar shots") + "</button>";
     if (S.compareMode && S.sel.length >= 2) h += "<button class='chip warn' id='cmpgo'>View side by side (" + S.sel.length + ")</button>";
-    h += "<span class='savestate' id='savestate'></span>";
+    h += "<button class='chip' id='reviewhelp'>Review guide</button>";
     h += "</div>";
     if (S.compareMode) {
       h += "<div class='cmphelp'>" + (S.sel.length < 2
         ? "Tap 2–4 similar photos below to select them — then a \"View side by side\" button will appear here."
         : S.sel.length + " selected — press \"View side by side\", or tap more photos (up to 4).") + "</div>";
     }
+    h += "<p class='rating-legend'>★4–5 = edit this · ★3 = maybe · ★1–2 = skip</p>" + saveNotice();
     h += "</header>";
 
     h += "<main>";
     if (isAdmin()) h += adminHtml();
-    else if (!localStorage.getItem("sftl-intro-" + S.data.gallery.id)) h += introHtml();
+    else if (S.showHelp) h += introHtml();
     if (!list.length) {
       h += "<div class='empty'>Nothing in this view yet.</div>";
     } else {
@@ -359,11 +433,11 @@
       list.forEach(function (img) {
         var selIdx = S.sel.indexOf(img.id);
         h += "<div class='card " + (selIdx >= 0 ? "selected" : "") + "' data-card='" + img.id + "'>";
-        h += "<div class='imgwrap' data-open='" + img.id + "'><img loading='lazy' src='" + imgUrl(img.thumb_path) + "' alt='" + esc(img.filename) + "'>";
-        h += "<span class='selbadge'>" + (selIdx + 1) + "</span></div>";
+        h += "<button class='imgwrap' aria-label='" + (S.compareMode ? "Select for comparison: " : "View photo: ") + esc(img.filename) + "' " + (S.compareMode ? "aria-pressed='" + (selIdx >= 0) + "' " : "") + "data-open='" + img.id + "'><img loading='lazy' src='" + esc(imgUrl(img.thumb_path)) + "' alt=''>";
+        h += "<span class='selbadge'>" + (selIdx + 1) + "</span></button>";
         h += "<div class='cardmeta'><div class='fname'>" + esc(img.filename) + "</div>";
         h += "<div class='cardrow'>" + starsHtml(img) + "<span class='cbadge'>" + (img.comments.length ? "💬 " + img.comments.length : "") + "</span></div>";
-        h += "</div></div>";
+        h += "<span class='unsaved' data-unsaved='" + img.id + "'></span></div></div>";
       });
       h += "</div>";
     }
@@ -374,6 +448,10 @@
     app.innerHTML = h;
     updateProgress();
     bind();
+    paintSaveState();
+    var restored = focusId ? document.getElementById(focusId) : focusOpen ? document.querySelector('[data-open="' + focusOpen + '"]') : focusFilter ? document.querySelector('[data-filter="' + focusFilter + '"]') : null;
+    if (!restored && (focusOpen || focusFilter)) restored = document.querySelector("[data-filter].on");
+    if (restored) restored.focus();
   }
 
   function updateProgress() {
@@ -412,15 +490,15 @@
   }
 
   function lightboxShell() {
-    return "<div class='lb' id='lb'>" +
+    return "<div class='lb' id='lb' aria-label='Photo review'>" +
       "<div class='lbtop'><span class='fname' id='lbname'></span><span class='lbcount' id='lbcountEl'></span>" +
       "<button class='lbclose' id='lbclose' aria-label='Close'>✕</button></div>" +
-      "<div class='lbbody'><div class='lbstage'>" +
-      "<button class='navbtn prev' id='lbprev'>‹</button><img id='lbimg' src='' alt=''><button class='navbtn next' id='lbnext'>›</button>" +
+      saveNotice() + "<div class='lbbody'><div class='lbstage'>" +
+      "<button class='navbtn prev' id='lbprev' aria-label='Previous photo'>‹</button><img id='lbimg' src='' alt=''><button class='navbtn next' id='lbnext' aria-label='Next photo'>›</button>" +
       "</div><div class='lbside' id='lbside'></div></div></div>";
   }
 
-  function lbImage() { return S.lbIndex >= 0 ? filtered()[S.lbIndex] : null; }
+  function lbImage() { return S.lbIndex >= 0 ? (S.lbImages || [])[S.lbIndex] : null; }
 
   function openLb(id) {
     var list = filtered();
@@ -428,21 +506,24 @@
     list.forEach(function (im, i) { if (im.id === id) ix = i; });
     if (ix < 0) return;
     S.lbIndex = ix;
-    document.getElementById("lb").classList.add("open");
+    S.lbImages = list.slice();
     paintLb();
+    SFTLDialog.show(document.getElementById("lb"));
+    paintSaveState();
   }
-  function closeLb() { S.lbIndex = -1; document.getElementById("lb").classList.remove("open"); }
+  function closeLb() { S.lbIndex = -1; SFTLDialog.hide(document.getElementById("lb")); render(); }
   function navLb(d) {
-    var list = filtered();
+    var list = S.lbImages || [];
     if (!list.length) return;
     S.lbIndex = (S.lbIndex + d + list.length) % list.length;
     paintLb();
   }
   function paintLb() {
     var img = lbImage(); if (!img) return;
-    var list = filtered();
+    var list = S.lbImages || [];
     document.getElementById("lbname").textContent = img.filename;
     document.getElementById("lbcountEl").textContent = (S.lbIndex + 1) + " / " + list.length;
+    var focusedStar = document.activeElement && document.activeElement.getAttribute("data-star");
     var el = document.getElementById("lbimg");
     el.src = imgUrl(img.preview_path); el.alt = img.filename;
     var nxt = list[(S.lbIndex + 1) % list.length];
@@ -453,12 +534,13 @@
     side += "<div><div class='sidelabel'>Download</div><button class='chip' id='dlone'>⬇ Download this photo</button>" +
       "<div class='hint' style='margin-top:5px'>Web-quality JPEG — great for screens, sharing and small prints. Ask your photographer about print-quality files.</div></div>";
     side += "<div style='flex:1'><div class='sidelabel'>Comments</div><div class='comments' id='lbcomments'>" + commentsHtml(img) + "</div></div>";
-    side += "<div class='cform'><textarea id='cbox' placeholder='What do you think? e.g. love this one, crop tighter…'></textarea><button id='csend'>Post</button></div>";
+    side += "<div class='cform'><textarea id='cbox' aria-label='Comment on this photo' maxlength='2000' placeholder='What do you think? e.g. love this one, crop tighter…'></textarea><button id='csend'>Post</button></div>";
     side += "<div class='hint'>Keys: ← → browse · 1–5 rate · 0 clear · Esc close</div>";
     document.getElementById("lbside").innerHTML = side;
     bindActionEls(document.getElementById("lbside"));
     document.getElementById("dlone").onclick = function () { downloadOne(img); };
     bindSide(img);
+    if (focusedStar) { var nextStar = document.querySelector("#lbside [data-star='" + focusedStar + "']"); if (nextStar) nextStar.focus(); }
   }
   function commentsHtml(img) {
     if (!img.comments.length) return "<div class='hint'>No comments yet.</div>";
@@ -471,12 +553,22 @@
   }
   function bindSide(img) {
     var box = document.getElementById("cbox"), send = document.getElementById("csend");
+    box.value = S.commentDrafts[img.id] || "";
+    box.oninput = function () { S.commentDrafts[img.id] = box.value; };
     send.onclick = function () {
+      if (send.disabled) return;
       var v = box.value.trim(); if (!v) return;
       send.disabled = true;
       addComment(img, v, function (ok) {
         send.disabled = false;
-        if (ok) { box.value = ""; document.getElementById("lbcomments").innerHTML = commentsHtml(img); bindDeletes(img); }
+        if (ok) {
+          delete S.commentDrafts[img.id];
+          if (lbImage() && lbImage().id === img.id) {
+            document.getElementById("cbox").value = "";
+            document.getElementById("lbcomments").innerHTML = commentsHtml(img); bindDeletes(img);
+          }
+          toast("Comment saved for " + img.filename);
+        }
       });
     };
     box.onkeydown = function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send.onclick(); e.stopPropagation(); };
@@ -489,24 +581,25 @@
   }
 
   function compareShell() {
-    return "<div class='cmp' id='cmp'><div class='cmptop'><h1 style='font-size:15px'>Compare</h1>" +
+    return "<div class='cmp' id='cmp' aria-label='Compare photos'><div class='cmptop'><h1 style='font-size:15px'>Compare</h1>" +
       "<span class='sub'>rate each, or remove to narrow down</span>" +
       "<button class='lbclose' id='cmpclose' aria-label='Close'>✕</button></div>" +
-      "<div class='cmppanes' id='cmppanes'></div></div>";
+      saveNotice() + "<div class='cmppanes' id='cmppanes'></div></div>";
   }
   function openCompare() {
     var panes = "";
     S.sel.forEach(function (id) {
       var img = byId(id); if (!img) return;
       panes += "<div class='cmppane' data-pane='" + img.id + "'>";
-      panes += "<div class='pimg'><img src='" + imgUrl(img.preview_path) + "' alt='" + esc(img.filename) + "'></div>";
+      panes += "<div class='pimg'><img src='" + esc(imgUrl(img.preview_path)) + "' alt='" + esc(img.filename) + "'></div>";
       panes += "<div class='cmpmeta'><span class='fname'>" + esc(img.filename) + "</span>" + starsHtml(img);
       panes += "<button class='rm' data-rm='" + img.id + "'>remove</button></div></div>";
     });
     var panesEl = document.getElementById("cmppanes");
     panesEl.innerHTML = panes;
     panesEl.className = "cmppanes" + (S.sel.length === 4 ? " grid4" : "");
-    document.getElementById("cmp").classList.add("open");
+    SFTLDialog.show(document.getElementById("cmp"));
+    paintSaveState();
     bindActionEls(document.getElementById("cmp"));
     document.querySelectorAll("[data-rm]").forEach(function (b) {
       b.onclick = function () {
@@ -515,7 +608,7 @@
       };
     });
   }
-  function closeCompare() { document.getElementById("cmp").classList.remove("open"); }
+  function closeCompare() { SFTLDialog.hide(document.getElementById("cmp")); }
 
   function byId(id) {
     for (var i = 0; i < S.images.length; i++) if (S.images[i].id === id) return S.images[i];
@@ -528,11 +621,13 @@
       el.querySelectorAll("button").forEach(function (b, i) {
         var lit = (img.rating || 0) >= i + 1;
         b.className = lit ? "lit" : ""; b.textContent = lit ? "★" : "☆";
+        b.setAttribute("aria-pressed", String(img.rating === i + 1));
       });
     });
     var card = document.querySelector("[data-card='" + img.id + "'] .cbadge");
     if (card) card.textContent = img.comments.length ? "💬 " + img.comments.length : "";
     updateProgress();
+    paintSaveState();
   }
 
   function bindActionEls(root) {
@@ -577,7 +672,7 @@
       });
       chain.then(function () {
         if (files.length) saveBlob(makeZip(files), (S.data.gallery.slug || "gallery") + "-photos.zip");
-        da.textContent = "⬇ Download all"; da.disabled = false;
+        da.textContent = "Download web photos"; da.disabled = false;
         toast(failed ? failed + " photo(s) failed to download — try again." : "Zip of " + files.length + " photos saved. Web-quality JPEGs — ask about print-quality files.", 3500);
       });
     };
@@ -597,9 +692,10 @@
       var dx = e.changedTouches[0].clientX - tx; tx = null;
       if (Math.abs(dx) > 45) navLb(dx > 0 ? -1 : 1);
     }, { passive: true });
+    document.getElementById("reviewhelp").onclick = function () { S.showHelp = !S.showHelp; render(); };
     var io = document.getElementById("introok");
     if (io) io.onclick = function () {
-      localStorage.setItem("sftl-intro-" + S.data.gallery.id, "1");
+      S.showHelp = false;
       render();
     };
     var cp = document.getElementById("copysel");
@@ -632,7 +728,8 @@
       return;
     }
     var img = lbImage(); if (!img) return;
-    if (e.target && e.target.tagName === "TEXTAREA") return;
+    if (e.target && /TEXTAREA|INPUT|SELECT/.test(e.target.tagName)) return;
+    if (["Escape", "ArrowLeft", "ArrowRight"].indexOf(e.key) >= 0) e.preventDefault();
     if (e.key === "Escape") closeLb();
     else if (e.key === "ArrowLeft") navLb(-1);
     else if (e.key === "ArrowRight") navLb(1);
@@ -640,26 +737,40 @@
     else if (e.key === "0") { img.rating = null; pushFeedback(img); refreshImageUI(img); }
   });
 
-  if (!token) {
-    app.innerHTML = "<div class='center'>This gallery needs an access link.<br>Please use the link you were sent.</div>";
-    return;
-  }
-  rpc("proof_get_gallery", { p_token: token })
-    .then(function (data) {
-      S.data = data;
-      S.images = data.images || [];
+  function loadGallery() {
+    if (!token) {
+      app.innerHTML = "<main class='entry-help'><a class='brand' href='../'>STORIES FROM THE LENS</a><h1>Your private album</h1><p>Open the personal album link Daniel sent you. Each link opens only your session.</p><p>Can't find your link? <a href='mailto:daniel@storiesfromthelens.com?subject=My%20album%20link'>Ask Daniel for your album link</a>.</p><a href='../'>Back to the website</a></main>";
+      return;
+    }
+    app.innerHTML = "<div class='center' role='status'>Loading your album…</div>";
+    Promise.all([
+      rpc("proof_get_gallery", { p_token: token }),
+      rpc("proof_finals_list", { p_token: token }).catch(function () { return { unavailable: true }; })
+    ]).then(function (result) {
+      var data = result[0], finals = result[1];
+      S.data = data; S.images = data.images || [];
+      S.finalsCount = (finals.finals || []).length;
+      S.finalsUnavailable = !!finals.unavailable;
       document.title = "SFTL · " + data.gallery.title;
+      draftKey = 'sftl-unsaved-' + data.gallery.id + '-' + data.role;
+      try {
+        var drafts = JSON.parse(localStorage.getItem(draftKey) || '[]');
+        if (Array.isArray(drafts)) drafts.forEach(function (draft) {
+          var img = byId(draft.id);
+          if (img && (draft.value === null || Number.isInteger(draft.value) && draft.value >= 1 && draft.value <= 5) && img.rating !== draft.value) {
+            img.rating = draft.value; savedOnce = true; saves.set(img.id, draft.value, true);
+          }
+        });
+      } catch (_) { storageAvailable = false; }
+      saves.notify();
       render();
-      rpc("proof_finals_list", { p_token: token })
-        .then(function (fd) {
-          var n = (fd && fd.finals ? fd.finals.length : 0);
-          if (n) { S.finalsCount = n; render(); }
-        })
-        .catch(function () {});
-    })
-    .catch(function () {
-      app.innerHTML = "<div class='center'>This link isn't valid or has expired.<br>Please check with your photographer.</div>";
+    }).catch(function (error) {
+      var invalid = error.status === 401 || error.status === 403 || /invalid token/.test(error.message);
+      app.innerHTML = "<main class='entry-help'><h1>" + (invalid ? "This album link isn't valid" : "Your album couldn't load") + "</h1><p>" + (invalid ? "Use the full link Daniel sent you, or ask for it again." : "Check your connection and try again. Your saved choices are still there.") + "</p><button class='chip' id='retry-load'>Try again</button><p><a href='mailto:daniel@storiesfromthelens.com'>Contact Daniel</a></p></main>";
+      document.getElementById('retry-load').onclick = loadGallery;
     });
+  }
+  loadGallery();
 })();
 </script>
 </body>

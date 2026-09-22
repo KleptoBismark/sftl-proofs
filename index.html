@@ -13,7 +13,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stories From The Lens — Photography</title>
-<meta name="description" content="Stories From The Lens — photography. Portfolio, sessions, and client galleries.">
+<meta name="description" content="Stories From The Lens — photography. Photographs of people, places, and moments. Explore the portfolio and enquire about a session with Daniel.">
 <link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/brand/favicon-16.png">
@@ -107,91 +107,124 @@
     display: flex; gap: 16px; flex-wrap: wrap;
   }
   footer .right { margin-left: auto; }
+
+  .nav { max-width: 1200px; padding: 20px 24px; flex-wrap: wrap; }
+  .nav .brand { flex-shrink: 0; }
+  .nav .links { gap: 14px; }
+  .nav a { display: inline-flex; align-items: center; min-height: 36px; }
+  .hero { padding-top: 48px; padding-bottom: 40px; text-align: left; }
+  .hero h1 { font-size: clamp(26px, 4vw, 48px); letter-spacing: -.03em; text-transform: none; }
+  .hero p { margin-top: 8px; }
+  .hero .portal { margin-top: 18px; }
+  .hero img.hero-photo { width: 100%; height: auto; margin: 28px 0 0; aspect-ratio: 2.98; object-fit: cover; }
+  .genres { display: flex; gap: 12px 24px; flex-wrap: wrap; }
+  .genres a { min-height: 36px; display: inline-flex; align-items: center; font-size: 14px; }
+  .photo-open { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 3px solid #C13A2E; outline-offset: 4px; }
+  .lb button:focus-visible { outline-color: #FCFCFA; }
+  .social { margin-top: 16px; }
+  .cat { scroll-margin-top: 20px; }
+  @media (max-width: 650px) {
+    .nav { gap: 12px; padding: 14px 20px; }
+    .nav .brand { font-size: 11px; letter-spacing: .18em; }
+    .nav .links { width: 100%; margin-left: 0; gap: 8px 16px; }
+    .nav .links a { font-size: 11px; }
+    .hero { padding-top: 28px; padding-bottom: 28px; }
+    .hero img.hero-photo { aspect-ratio: 1.8; }
+    section { padding: 40px 0; }
+    .wrap, .wrapwide { padding-left: 20px; padding-right: 20px; }
+    .lb .p, .lb .n { top: auto; bottom: 8px; transform: none; }
+    .lb img { max-height: 78vh; }
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap nav">
     <a class="brand" href="./"><img src="assets/brand/sftl-mark-small.svg" alt=""><span>STORIES FROM THE LENS</span></a>
-    <nav class="links">
+    <nav class="links" aria-label="Main navigation">
       <a href="#work">Work</a>
       <a href="#about">About</a>
-      <a href="#services">Services</a>
+      <a href="#services">Sessions</a>
+      <a href="#contact">Enquire</a>
       <a href="client/">Client area</a>
     </nav>
   </div>
 </header>
 
-<div class="hero wrap">
-  <img src="assets/brand/sftl-mark-light.svg" alt="">
-  <h1>Stories From The Lens</h1>
-  <p>Photography</p>
+<main>
+<div class="hero wrapwide">
+  <div class="hero-copy"><h1>People. Places. Moments.</h1>
+  <p>Photography by Daniel · Stories From The Lens</p>
+  <a class="portal" href="#work">Explore the photographs</a></div>
+  <img class="hero-photo" src="assets/work/full/sftl_1612060130-pano.jpg" alt="A mosque and minarets in warm evening light" fetchpriority="high">
 </div>
 
 <section id="work">
   <div class="wrapwide">
     <h2>Work</h2>
+    <nav class="genres" aria-label="Photography categories"><a href="#street-travel">Street &amp; Travel</a><a href="#portraits">Portraits &amp; People</a><a href="#events">Events &amp; Live Music</a><a href="#weddings">Weddings</a><a href="#animals">Animals</a></nav>
 
-    <div class="cat">
+    <div class="cat" id="street-travel">
       <h3>Street &amp; Travel</h3>
       <div class="masonry">
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612060130-pano.jpg" data-full="assets/work/full/sftl_1612060130-pano.jpg" alt="Travel photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/20260510_aeropresstaladnoi_0051.jpg" data-full="assets/work/full/20260510_aeropresstaladnoi_0051.jpg" alt="Street photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/20260510_aeropresstaladnoi_0071.jpg" data-full="assets/work/full/20260510_aeropresstaladnoi_0071.jpg" alt="Travel photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612070277.jpg" data-full="assets/work/full/sftl_1612070277.jpg" alt="Travel photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612160599.jpg" data-full="assets/work/full/sftl_1612160599.jpg" alt="Street photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612221221.jpg" data-full="assets/work/full/sftl_1612221221.jpg" alt="Street photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1708105515.jpg" data-full="assets/work/full/sftl_1708105515.jpg" alt="Street photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1710145615.jpg" data-full="assets/work/full/sftl_1710145615.jpg" alt="Street photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1802167799.jpg" data-full="assets/work/full/sftl_1802167799.jpg" alt="Landscape photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/moses_1508310967.jpg" data-full="assets/work/full/moses_1508310967.jpg" alt="Landscape photography"></figure>
+        <figure><button class="photo-open" aria-label="View photograph 1: Travel photography"><img loading="lazy" src="assets/work/thumb/sftl_1612060130-pano.jpg" data-full="assets/work/full/sftl_1612060130-pano.jpg" alt="Travel photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 2: Street photography"><img loading="lazy" src="assets/work/thumb/20260510_aeropresstaladnoi_0051.jpg" data-full="assets/work/full/20260510_aeropresstaladnoi_0051.jpg" alt="Street photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 3: Travel photography"><img loading="lazy" src="assets/work/thumb/20260510_aeropresstaladnoi_0071.jpg" data-full="assets/work/full/20260510_aeropresstaladnoi_0071.jpg" alt="Travel photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 4: Travel photography"><img loading="lazy" src="assets/work/thumb/sftl_1612070277.jpg" data-full="assets/work/full/sftl_1612070277.jpg" alt="Travel photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 5: Street photography"><img loading="lazy" src="assets/work/thumb/sftl_1612160599.jpg" data-full="assets/work/full/sftl_1612160599.jpg" alt="Street photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 6: Street photography"><img loading="lazy" src="assets/work/thumb/sftl_1612221221.jpg" data-full="assets/work/full/sftl_1612221221.jpg" alt="Street photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 7: Street photography"><img loading="lazy" src="assets/work/thumb/sftl_1708105515.jpg" data-full="assets/work/full/sftl_1708105515.jpg" alt="Street photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 8: Street photography"><img loading="lazy" src="assets/work/thumb/sftl_1710145615.jpg" data-full="assets/work/full/sftl_1710145615.jpg" alt="Street photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 9: Landscape photography"><img loading="lazy" src="assets/work/thumb/sftl_1802167799.jpg" data-full="assets/work/full/sftl_1802167799.jpg" alt="Landscape photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 10: Landscape photography"><img loading="lazy" src="assets/work/thumb/moses_1508310967.jpg" data-full="assets/work/full/moses_1508310967.jpg" alt="Landscape photography"></button></figure>
       </div>
     </div>
 
-    <div class="cat">
+    <div class="cat" id="portraits">
       <h3>Portraits &amp; People</h3>
       <div class="masonry">
-        <figure><img loading="lazy" src="assets/work/thumb/20260525_danang_0146-6.jpg" data-full="assets/work/full/20260525_danang_0146-6.jpg" alt="Flower vendor, Da Nang"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612070255.jpg" data-full="assets/work/full/sftl_1612070255.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612110036.jpg" data-full="assets/work/full/sftl_1612110036.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612110056.jpg" data-full="assets/work/full/sftl_1612110056.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612110084.jpg" data-full="assets/work/full/sftl_1612110084.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612251600.jpg" data-full="assets/work/full/sftl_1612251600.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612251664.jpg" data-full="assets/work/full/sftl_1612251664.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1705215051-2.jpg" data-full="assets/work/full/sftl_1705215051-2.jpg" alt="Beauty portrait"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1705215207.jpg" data-full="assets/work/full/sftl_1705215207.jpg" alt="Portrait photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1804298199.jpg" data-full="assets/work/full/sftl_1804298199.jpg" alt="Portrait photography"></figure>
+        <figure><button class="photo-open" aria-label="View photograph 11: Flower vendor, Da Nang"><img loading="lazy" src="assets/work/thumb/20260525_danang_0146-6.jpg" data-full="assets/work/full/20260525_danang_0146-6.jpg" alt="Flower vendor, Da Nang"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 12: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1612070255.jpg" data-full="assets/work/full/sftl_1612070255.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 13: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1612110036.jpg" data-full="assets/work/full/sftl_1612110036.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 14: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1612110056.jpg" data-full="assets/work/full/sftl_1612110056.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 15: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1612110084.jpg" data-full="assets/work/full/sftl_1612110084.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 16: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1612251600.jpg" data-full="assets/work/full/sftl_1612251600.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 17: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1612251664.jpg" data-full="assets/work/full/sftl_1612251664.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 18: Beauty portrait"><img loading="lazy" src="assets/work/thumb/sftl_1705215051-2.jpg" data-full="assets/work/full/sftl_1705215051-2.jpg" alt="Beauty portrait"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 19: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1705215207.jpg" data-full="assets/work/full/sftl_1705215207.jpg" alt="Portrait photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 20: Portrait photography"><img loading="lazy" src="assets/work/thumb/sftl_1804298199.jpg" data-full="assets/work/full/sftl_1804298199.jpg" alt="Portrait photography"></button></figure>
       </div>
     </div>
 
-    <div class="cat">
+    <div class="cat" id="events">
       <h3>Events &amp; Live Music</h3>
       <div class="masonry">
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1610079539.jpg" data-full="assets/work/full/sftl_1610079539.jpg" alt="Event photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1612251696.jpg" data-full="assets/work/full/sftl_1612251696.jpg" alt="Muay Thai fight night"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1710155801.jpg" data-full="assets/work/full/sftl_1710155801.jpg" alt="Live music photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1804308375.jpg" data-full="assets/work/full/sftl_1804308375.jpg" alt="Event photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1712177070.jpg" data-full="assets/work/full/sftl_1712177070.jpg" alt="Live music photography"></figure>
+        <figure><button class="photo-open" aria-label="View photograph 21: Event photography"><img loading="lazy" src="assets/work/thumb/sftl_1610079539.jpg" data-full="assets/work/full/sftl_1610079539.jpg" alt="Event photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 22: Muay Thai fight night"><img loading="lazy" src="assets/work/thumb/sftl_1612251696.jpg" data-full="assets/work/full/sftl_1612251696.jpg" alt="Muay Thai fight night"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 23: Live music photography"><img loading="lazy" src="assets/work/thumb/sftl_1710155801.jpg" data-full="assets/work/full/sftl_1710155801.jpg" alt="Live music photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 24: Event photography"><img loading="lazy" src="assets/work/thumb/sftl_1804308375.jpg" data-full="assets/work/full/sftl_1804308375.jpg" alt="Event photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 25: Live music photography"><img loading="lazy" src="assets/work/thumb/sftl_1712177070.jpg" data-full="assets/work/full/sftl_1712177070.jpg" alt="Live music photography"></button></figure>
       </div>
     </div>
 
-    <div class="cat">
+    <div class="cat" id="weddings">
       <h3>Weddings</h3>
       <div class="masonry">
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024138.jpg" data-full="assets/work/full/sftl_1702112024138.jpg" alt="Wedding photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024336.jpg" data-full="assets/work/full/sftl_1702112024336.jpg" alt="Wedding photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024338.jpg" data-full="assets/work/full/sftl_1702112024338.jpg" alt="Wedding photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702112024748.jpg" data-full="assets/work/full/sftl_1702112024748.jpg" alt="Wedding photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1702114419.jpg" data-full="assets/work/full/sftl_1702114419.jpg" alt="Wedding ceremony"></figure>
+        <figure><button class="photo-open" aria-label="View photograph 26: Wedding photography"><img loading="lazy" src="assets/work/thumb/sftl_1702112024138.jpg" data-full="assets/work/full/sftl_1702112024138.jpg" alt="Wedding photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 27: Wedding photography"><img loading="lazy" src="assets/work/thumb/sftl_1702112024336.jpg" data-full="assets/work/full/sftl_1702112024336.jpg" alt="Wedding photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 28: Wedding photography"><img loading="lazy" src="assets/work/thumb/sftl_1702112024338.jpg" data-full="assets/work/full/sftl_1702112024338.jpg" alt="Wedding photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 29: Wedding photography"><img loading="lazy" src="assets/work/thumb/sftl_1702112024748.jpg" data-full="assets/work/full/sftl_1702112024748.jpg" alt="Wedding photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 30: Wedding ceremony"><img loading="lazy" src="assets/work/thumb/sftl_1702114419.jpg" data-full="assets/work/full/sftl_1702114419.jpg" alt="Wedding ceremony"></button></figure>
       </div>
     </div>
 
-    <div class="cat">
+    <div class="cat" id="animals">
       <h3>Animals</h3>
       <div class="masonry">
-        <figure><img loading="lazy" src="assets/work/thumb/sftl_1711186625.jpg" data-full="assets/work/full/sftl_1711186625.jpg" alt="Animal photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/moses_071020_4186.jpg" data-full="assets/work/full/moses_071020_4186.jpg" alt="Animal photography"></figure>
-        <figure><img loading="lazy" src="assets/work/thumb/moses_1509111653.jpg" data-full="assets/work/full/moses_1509111653.jpg" alt="Animal photography"></figure>
+        <figure><button class="photo-open" aria-label="View photograph 31: Animal photography"><img loading="lazy" src="assets/work/thumb/sftl_1711186625.jpg" data-full="assets/work/full/sftl_1711186625.jpg" alt="Animal photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 32: Animal photography"><img loading="lazy" src="assets/work/thumb/moses_071020_4186.jpg" data-full="assets/work/full/moses_071020_4186.jpg" alt="Animal photography"></button></figure>
+        <figure><button class="photo-open" aria-label="View photograph 33: Animal photography"><img loading="lazy" src="assets/work/thumb/moses_1509111653.jpg" data-full="assets/work/full/moses_1509111653.jpg" alt="Animal photography"></button></figure>
       </div>
     </div>
   </div>
@@ -200,26 +233,32 @@
 <section id="about">
   <div class="wrap">
     <h2>About</h2>
-    <p class="soon">Coming soon.</p>
+    <p>Stories From The Lens is Daniel’s photography portfolio: people and celebrations, everyday scenes, and places encountered along the way. Explore the collections above, or get in touch to talk about photographs of your own.</p>
   </div>
 </section>
 
 <section id="services">
   <div class="wrap">
-    <h2>Services</h2>
-    <p class="soon">Session details and booking information are on their way.</p>
+    <h2>Plan a session</h2>
+    <p>Thinking about portraits, a wedding, or an event? Send Daniel a little about what you have in mind, your preferred date, and the photographs you would like to make. We can discuss the details and availability together.</p>
+    <a class="portal" href="mailto:daniel@storiesfromthelens.com?subject=Photography%20enquiry">Enquire about a session</a>
   </div>
 </section>
 
 <section id="client">
   <div class="wrap">
     <h2>Clients</h2>
-    <p>Reviewing proofs from a session? Use the personal link you were
-    sent — it opens your gallery directly.</p>
-    <a class="portal" href="client/">Client area</a>
+    <p>Your photographs have their own private album link. Use the personal link Daniel sent you to open your session directly.</p>
+    <a class="portal" href="client/">Help finding your album</a>
   </div>
 </section>
 
+<section id="contact"><div class="wrap">
+  <h2>Let’s talk photographs</h2>
+  <p><a href="mailto:daniel@storiesfromthelens.com">daniel@storiesfromthelens.com</a></p>
+  <p class="social"><a href="https://www.instagram.com/storiesfromthelens/" target="_blank" rel="noopener noreferrer">Instagram · @storiesfromthelens</a></p>
+</div></section>
+</main>
 <footer>
   <div class="wrap" style="display:flex;gap:16px;flex-wrap:wrap;width:100%">
     <span>© 2026 Stories From The Lens</span>
@@ -227,12 +266,13 @@
   </div>
 </footer>
 
-<div class="lb" id="lb">
+<div class="lb" id="lb" aria-label="Portfolio photograph">
   <button class="x" aria-label="Close">✕</button>
   <button class="p" aria-label="Previous">‹</button>
   <img id="lbimg" src="" alt="">
   <button class="n" aria-label="Next">›</button>
 </div>
+<script src="assets/js/ui.js"></script>
 <script>
 (function () {
   var figs = Array.prototype.slice.call(document.querySelectorAll("#work [data-full]"));
@@ -241,16 +281,17 @@
     i = (n + figs.length) % figs.length;
     im.src = figs[i].getAttribute("data-full");
     im.alt = figs[i].alt || "";
-    lb.classList.add("open");
+    SFTLDialog.show(lb);
   }
-  function close() { lb.classList.remove("open"); im.src = ""; i = -1; }
-  figs.forEach(function (f, n) { f.addEventListener("click", function () { show(n); }); });
+  function close() { SFTLDialog.hide(lb); im.src = ""; i = -1; }
+  figs.forEach(function (f, n) { f.closest("button").addEventListener("click", function () { show(n); }); });
   lb.querySelector(".x").addEventListener("click", close);
   lb.querySelector(".p").addEventListener("click", function (e) { e.stopPropagation(); show(i - 1); });
   lb.querySelector(".n").addEventListener("click", function (e) { e.stopPropagation(); show(i + 1); });
   lb.addEventListener("click", function (e) { if (e.target === lb || e.target === im) close(); });
   document.addEventListener("keydown", function (e) {
     if (!lb.classList.contains("open")) return;
+    if (["Escape", "ArrowLeft", "ArrowRight"].indexOf(e.key) >= 0) e.preventDefault();
     if (e.key === "Escape") close();
     else if (e.key === "ArrowLeft") show(i - 1);
     else if (e.key === "ArrowRight") show(i + 1);
