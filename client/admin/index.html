@@ -131,6 +131,7 @@
       .then(function () { toast(label + " copied"); })
       .catch(function () { window.prompt("Copy " + label + ":", text); });
   }
+  function galleryCode(g) { return (g.access_code || '').match(/.{1,4}/g)?.join('-') || ''; }
   function fmtDate(iso) {
     if (!iso) return "—";
     var d = new Date(iso);
@@ -155,6 +156,7 @@
         '<div class="stat"><b>' + (g.remaining_count == null ? "—" : g.remaining_count) + '</b><span>Selected without finals</span></div>' +
         '<div class="stat"><b>' + g.comment_count + '</b><span>Comments</span></div></div>' +
         '<p class="gsub">Last activity: ' + fmtDate(g.last_activity) + (g.submitted_at ? ' · Submitted: ' + fmtDate(g.submitted_at) : '') + '</p>' +
+        (g.access_code ? '<p class="gsub">Gallery code: <code>' + esc(galleryCode(g)) + '</code></p><div class="linkrow"><button class="chip" data-copy="invitation" data-i="' + idx + '">Copy client invitation</button><button class="chip" data-copy="code" data-i="' + idx + '">Copy gallery code</button></div>' : '') +
         '<div class="linkrow"><a class="chip go" href="' + PORTAL + '?t=' + esc(g.admin_token) + '" target="_blank" rel="noopener noreferrer">Open as photographer</a>' +
         '<button class="chip" data-copy="client" data-i="' + idx + '">Copy client album link</button>' +
         (g.finals_count ? '<button class="chip" data-copy="finals" data-i="' + idx + '">Copy finished-photo link</button><a class="chip" href="' + PORTAL + 'finals/?t=' + esc(g.admin_token) + '">View finished photos</a>' : '') +
@@ -169,6 +171,10 @@
     var b = e.target.closest("[data-copy]");
     if (!b) return;
     var g = albums[+b.dataset.i], type = b.dataset.copy;
+    if (type === "code") { copy(galleryCode(g), "Gallery code"); return; }
+    if (type === "invitation") {
+      copy('Your album: ' + g.title + '\n\n' + PORTAL + '?t=' + g.share_token + '\n\nYou can also visit ' + PORTAL + ' and enter your gallery code: ' + galleryCode(g), "Client invitation"); return;
+    }
     copy(PORTAL + (type === "finals" ? 'finals/' : '') + '?t=' + (type === "admin" ? g.admin_token : g.share_token), type === "admin" ? "Photographer link" : type === "finals" ? "Finished-photo link" : "Client album link");
   });
   app.addEventListener("click", async function (e) {

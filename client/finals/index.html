@@ -179,7 +179,7 @@
     photos = d.finals || [];
     var back = '<nav class="albumnav" aria-label="Album navigation">' +
       ((d.album_mode !== "delivery" || d.role === "admin") ? '<a class="dl" href="../?t=' + encodeURIComponent(token) + '&amp;view=review">' + (d.stage === "delivered" ? "View selection" : "Back to selection") + '</a>' : '') +
-      '<a class="dl" href="mailto:daniel@storiesfromthelens.com?subject=My%20finished%20photos">Contact Daniel</a></nav>';
+      '<a class="dl" href="mailto:daniel@storiesfromthelens.com?subject=My%20finished%20photos">Contact</a></nav>';
     if (!photos.length) { app.innerHTML = back + '<div class="center">Your finished photographs will appear here when they are ready. Your album link will stay the same.</div>'; return; }
     var total = photos.reduce(function (sum, f) { return sum + (f.size_bytes || 0); }, 0);
     app.innerHTML = back + '<p class="intro">' + photos.length + ' finished photograph' + (photos.length === 1 ? '' : 's') + (total ? ' · Full-resolution files total ' + fmtMB(total) : '') + '. Open a photo to view it. Download full resolution for your archive or printing, or a web copy for sharing when available. Downloads are individual files, so you can save them one at a time on mobile.</p>' +
@@ -197,13 +197,13 @@
     rpc("proof_finals_list", {p_token:token}).then(render).catch(function (err) {
       var invalid = err.status === 401 || err.status === 403 || /invalid token/.test(err.message);
       app.innerHTML = '<div class="center"><h2>' + (invalid ? 'This album link is not valid' : 'Your finished photos could not load') + '</h2><p>' +
-        (invalid ? 'Use the full link Daniel sent you, or ask for it again.' : 'Check your connection and try again.') + '</p><button class="dl" id="retry-finals">Try again</button><p><a href="mailto:daniel@storiesfromthelens.com">Contact Daniel</a></p></div>';
+        (invalid ? 'Use your full album link, or enter your gallery code.' : 'Check your connection and try again.') + '</p><button class="dl" id="retry-finals">Try again</button><p><a href="../">Enter a gallery code</a></p><p><a href="mailto:daniel@storiesfromthelens.com">Contact</a></p></div>';
       document.getElementById('retry-finals').onclick = load;
     });
   }
 
   if (!token) {
-    app.innerHTML = '<div class="center">Missing token. Open the link you were sent (it ends in <code>?t=…</code>).</div>';
+    app.innerHTML = '<div class="center"><h2>Open your album</h2><p>Use the link sent with your album, or <a href="../">enter your gallery code</a>.</p></div>';
     return;
   }
   load();

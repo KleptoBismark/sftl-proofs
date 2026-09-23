@@ -208,6 +208,12 @@
   .entry-help h1 { font-size: 26px; margin-bottom: 20px; }
   .entry-help p { margin: 20px 0; color: #bbb; }
   .entry-help a { color: #ececec; }
+  .entry-help label { display: block; margin-bottom: 8px; }
+  .entry-help input { display: block; width: 100%; min-height: 48px; margin-bottom: 16px; padding: 12px; border: 1px solid #888; border-radius: 4px; background: #242424; color: #ececec; font: inherit; }
+  .entry-help input:focus-visible { outline: 3px solid #ececec; outline-offset: 3px; }
+  .entry-help button { min-height: 44px; }
+  .entry-help #entry-message { min-height: 24px; }
+
   @media (max-width: 560px) {
     header { position: static; padding: 12px; }
     main { padding: 12px; }
@@ -804,7 +810,28 @@
 
   function loadGallery() {
     if (!token) {
-      app.innerHTML = "<main class='entry-help'><a class='brand' href='../'>STORIES FROM THE LENS</a><h1>Your private album</h1><p>Open the personal album link Daniel sent you. Each link opens only your session.</p><p>Can't find your link? <a href='mailto:daniel@storiesfromthelens.com?subject=My%20album%20link'>Ask Daniel for your album link</a>.</p><a href='../'>Back to the website</a></main>";
+      app.innerHTML = "<main class='entry-help'><a class='brand' href='../'>STORIES FROM THE LENS</a><h1>Your album</h1><p>Enter the gallery code sent with your album.</p><form id='album-entry'><label for='album-code'>Gallery code</label><input id='album-code' name='album-code' type='text' autocomplete='off' autocapitalize='characters' spellcheck='false' maxlength='100' required aria-describedby='entry-message'><button class='chip' type='submit'>Open album</button><p id='entry-message' role='status' aria-live='polite'></p></form><p>You can also open your album directly using the link in your message.</p><p>Can't find your code or link? <a href='mailto:daniel@storiesfromthelens.com?subject=My%20album%20access'>Contact</a></p><a href='../'>Back to the website</a></main>";
+      document.getElementById('album-entry').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        var input = document.getElementById('album-code'), button = event.target.querySelector('button'), message = document.getElementById('entry-message');
+        if (button.disabled) return;
+        input.removeAttribute('aria-invalid');
+        if (!/^[0-9a-f]{20}$/i.test(input.value.replace(/[\s-]/g, ''))) {
+          message.textContent = 'Check your code and enter all 20 letters and numbers. Spaces and hyphens are fine.';
+          input.setAttribute('aria-invalid', 'true'); input.focus(); return;
+        }
+        button.disabled = true; message.textContent = 'Opening album…';
+        try {
+          var result = await rpc('proof_open_album', {p_code: input.value});
+          if (!result || !result.token) throw new Error('Missing album');
+          location.assign('?t=' + encodeURIComponent(result.token));
+        } catch (error) {
+          var invalid = error.status === 401 || error.status === 403;
+          message.textContent = invalid ? 'That code was not recognised. Check the code in your message and try again.' : 'Your album could not be opened. Check your connection and try again.';
+          if (invalid) input.setAttribute('aria-invalid', 'true');
+          button.disabled = false; input.focus();
+        }
+      });
       return;
     }
     app.innerHTML = "<div class='center' role='status'>Loading your album…</div>";
@@ -834,7 +861,7 @@
       render();
     }).catch(function (error) {
       var invalid = error.status === 401 || error.status === 403 || /invalid token/.test(error.message);
-      app.innerHTML = "<main class='entry-help'><h1>" + (invalid ? "This album link isn't valid" : "Your album couldn't load") + "</h1><p>" + (invalid ? "Use the full link Daniel sent you, or ask for it again." : "Check your connection and try again. Your saved choices are still there.") + "</p><button class='chip' id='retry-load'>Try again</button><p><a href='mailto:daniel@storiesfromthelens.com'>Contact Daniel</a></p></main>";
+      app.innerHTML = "<main class='entry-help'><h1>" + (invalid ? "This album link isn't valid" : "Your album couldn't load") + "</h1><p>" + (invalid ? "Use your full album link, or request it again." : "Check your connection and try again. Your saved choices are still there.") + "</p><button class='chip' id='retry-load'>Try again</button><p><a href='./'>Enter a gallery code</a></p><p><a href='mailto:daniel@storiesfromthelens.com'>Contact</a></p></main>";
       document.getElementById('retry-load').onclick = loadGallery;
     });
   }

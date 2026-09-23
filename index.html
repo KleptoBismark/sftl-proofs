@@ -13,7 +13,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stories From The Lens — Photography</title>
-<meta name="description" content="Stories From The Lens — photography. Photographs of people, places, and moments. Explore the portfolio and enquire about a session with Daniel.">
+<meta name="description" content="Photography from Stories From The Lens. Browse the photographs or get in touch about a session.">
 <link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/brand/favicon-16.png">
@@ -101,8 +101,14 @@
   }
   .portal:hover { background: var(--ink); color: var(--paper); }
 
+  .back-top {
+    position: fixed; right: 20px; bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 20; padding: 10px 16px; border: 1px solid var(--ink);
+    background: var(--paper); color: var(--ink); font-size: 13px;
+    text-decoration: none; box-shadow: 0 2px 8px #0002;
+  }
   footer {
-    border-top: 1px solid var(--line); padding: 28px 0 40px;
+    border-top: 1px solid var(--line); padding: 28px 0 90px;
     font-size: 12.5px; color: var(--grey); letter-spacing: .04em;
     display: flex; gap: 16px; flex-wrap: wrap;
   }
@@ -138,15 +144,14 @@
   }
 </style>
 </head>
-<body>
+<body id="top">
 <header>
   <div class="wrap nav">
     <a class="brand" href="./"><img src="assets/brand/sftl-mark-small.svg" alt=""><span>STORIES FROM THE LENS</span></a>
     <nav class="links" aria-label="Main navigation">
       <a href="#work">Work</a>
-      <a href="#about">About</a>
       <a href="#services">Sessions</a>
-      <a href="#contact">Enquire</a>
+      <a href="#contact">Contact</a>
       <a href="client/">Client area</a>
     </nav>
   </div>
@@ -154,9 +159,9 @@
 
 <main>
 <div class="hero wrapwide">
-  <div class="hero-copy"><h1>People. Places. Moments.</h1>
-  <p>Photography by Daniel · Stories From The Lens</p>
-  <a class="portal" href="#work">Explore the photographs</a></div>
+  <div class="hero-copy"><h1>Stories From The Lens</h1>
+  <p>Photography</p>
+  <a class="portal" href="#work">View photographs</a></div>
   <img class="hero-photo" src="assets/work/full/sftl_1612060130-pano.jpg" alt="A mosque and minarets in warm evening light" fetchpriority="high">
 </div>
 
@@ -230,31 +235,24 @@
   </div>
 </section>
 
-<section id="about">
-  <div class="wrap">
-    <h2>About</h2>
-    <p>Stories From The Lens is Daniel’s photography portfolio: people and celebrations, everyday scenes, and places encountered along the way. Explore the collections above, or get in touch to talk about photographs of your own.</p>
-  </div>
-</section>
-
 <section id="services">
   <div class="wrap">
     <h2>Plan a session</h2>
-    <p>Thinking about portraits, a wedding, or an event? Send Daniel a little about what you have in mind, your preferred date, and the photographs you would like to make. We can discuss the details and availability together.</p>
-    <a class="portal" href="mailto:daniel@storiesfromthelens.com?subject=Photography%20enquiry">Enquire about a session</a>
+    <p>For portraits, weddings, and events, email with your date, location, and what you have in mind.</p>
+    <a class="portal" href="mailto:daniel@storiesfromthelens.com?subject=Photography%20enquiry">Contact</a>
   </div>
 </section>
 
 <section id="client">
   <div class="wrap">
     <h2>Clients</h2>
-    <p>Your photographs have their own private album link. Use the personal link Daniel sent you to open your session directly.</p>
-    <a class="portal" href="client/">Help finding your album</a>
+    <p>Enter your gallery code to view your photographs. You can also use the album link sent to you.</p>
+    <a class="portal" href="client/">Open your album</a>
   </div>
 </section>
 
 <section id="contact"><div class="wrap">
-  <h2>Let’s talk photographs</h2>
+  <h2>Contact</h2>
   <p><a href="mailto:daniel@storiesfromthelens.com">daniel@storiesfromthelens.com</a></p>
   <p class="social"><a href="https://www.instagram.com/storiesfromthelens/" target="_blank" rel="noopener noreferrer">Instagram · @storiesfromthelens</a></p>
 </div></section>
@@ -265,6 +263,8 @@
     <span class="right">storiesfromthelens.com</span>
   </div>
 </footer>
+
+<a class="back-top" href="#top">↑ Back to top</a>
 
 <div class="lb" id="lb" aria-label="Portfolio photograph">
   <button class="x" aria-label="Close">✕</button>
