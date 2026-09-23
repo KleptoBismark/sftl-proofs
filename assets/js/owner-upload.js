@@ -57,7 +57,7 @@
     let local=[], batch=null, target=null, proofs=[], busy=false, attempt=null, rebaseCandidate=null;
     function say(text){message.textContent=text;}
     function clearLocal(){for(const p of local)URL.revokeObjectURL(p.url);local=[];}
-    function lock(value){busy=value;form.querySelectorAll('button,input,select').forEach(el=>el.disabled=value);details.disabled=value||!!batch||!!target||!!attempt;picker.disabled=value||!!attempt&&!batch;review.querySelectorAll('select').forEach(el=>el.disabled=value||!!batch||!!attempt);$('#upload-publish').disabled=value;$('#upload-start').disabled=value;$('#upload-progress').hidden=!value;}
+    function lock(value){busy=value;$('[data-close]').disabled=value;form.querySelectorAll('button,input,select').forEach(el=>el.disabled=value);details.disabled=value||!!batch||!!target||!!attempt;picker.disabled=value||!!attempt&&!batch;review.querySelectorAll('select').forEach(el=>el.disabled=value||!!batch||!!attempt);$('#upload-publish').disabled=value;$('#upload-start').disabled=value;$('#upload-progress').hidden=!value;}
     function guidance(){const delivery=form.elements.kind.value==='delivery';$('#export-confirmation').hidden=!delivery;$('#upload-guidance').textContent=delivery?'Finished photos are delivered at the exact quality and size you choose.':'Only resized previews and thumbnails will be uploaded. Your original photographs stay on this device. Clients choose edits with 4 or 5 stars.';}
     function renderReview(){
       const files=batch?.manifest.files || local.map(p=>p.meta);
