@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../../assets/brand/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="../../assets/brand/favicon-16.png">
 <link rel="apple-touch-icon" href="../../assets/brand/favicon-180.png">
+<link rel="stylesheet" href="../../assets/owner-upload.css?v=20260923-1">
 <style>
   :root {
     --bg: #131313; --panel: #1c1c1c; --panel2: #242424; --line: #303030;
@@ -94,6 +95,7 @@
 <main id="app"><div class="center">Loading galleries…</div></main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../../assets/js/ui.js?v=20260922-2"></script>
+<script src="../../assets/js/owner-upload.js?v=20260923-1"></script>
 <script>
 (function () {
   var SUPA = "https://yignpdzywcxbfhdqipav.supabase.co";
@@ -160,6 +162,7 @@
         '<div class="linkrow"><a class="chip go" href="' + PORTAL + '?t=' + esc(g.admin_token) + '" target="_blank" rel="noopener noreferrer">Open as photographer</a>' +
         '<button class="chip" data-copy="client" data-i="' + idx + '">Copy client album link</button>' +
         (g.finals_count ? '<button class="chip" data-copy="finals" data-i="' + idx + '">Copy finished-photo link</button><a class="chip" href="' + PORTAL + 'finals/?t=' + esc(g.admin_token) + '">View finished photos</a>' : '') +
+        '<button class="chip" data-add-finals data-i="' + idx + '">Add finished photos</button>' +
         '<button class="chip" data-copy="admin" data-i="' + idx + '">Copy photographer link</button></div>' +
         (g.workflow_version == null ? '' : '<div class="stageform" data-i="' + idx + '"><label>Album stage<select name="stage">' + Object.keys(stages).map(function (v) {return '<option value="' + v + '"' + (v===stage?' selected':'') + '>' + stages[v] + '</option>';}).join('') +
         '</select></label><label>Client experience<select name="mode"><option value="proofing"' + (g.album_mode!=="delivery"?' selected':'') + '>Choose, then receive photos</option><option value="delivery"' + (g.album_mode==="delivery"?' selected':'') + '>Finished photos only</option></select></label><button class="chip" type="button" data-update>Update album</button></div>') +
@@ -201,7 +204,9 @@
     app.innerHTML = '<div class="center">Missing token. Open your owner link with <code>?t=…</code></div>';
     return;
   }
-  load()
+  load().then(function () {
+    SFTLOwnerUpload.install({host:app,token:token,key:KEY,supa:SUPA,rpc:rpc,refresh:load,getAlbums:function(){return albums;},escape:esc});
+  })
     .catch(function (err) {
       app.innerHTML = '<div class="center">' +
         (String(err.message).indexOf("42501") >= 0 || String(err.message).indexOf("invalid token") >= 0
