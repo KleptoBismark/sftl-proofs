@@ -28,3 +28,12 @@ workspace. See `AGENTS.md` for repository instructions.
 Run JavaScript unit checks with `node --test tests/*.test.cjs`. Broader browser
 and backend checks live in the private workspace. A push to the deployed branch
 can publish the website; verify the resulting Pages deployment.
+
+## Local draft status — 9 November 2026
+
+The working tree includes an unpublished prints, sessions and About draft plus
+homepage changes. These pages contain placeholders and `noindex` directives;
+Daniel asked to wait for final assets before going live. See
+`DRAFT_SITE_ARCHITECTURE.md` for remaining content and release conditions.
+The deployed website remains the September owner-upload release (`9453b2f`).
+Do not deploy the local draft as part of a documentation update.
